@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>학교 주변 제설 계획 실험실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 수업 시간에 모둠이 함께 넘겨 보는 차분한 활동 웹사이트.
+   IDEA: 단계를 하나씩 채우면 마지막에 우리 모둠의 시뮬레이터가 조립되는 작업 노트.
+   PICTURE: 3단계의 장소 그림 3장과 4단계에서 생성되는 학교 배치도 시뮬레이터.
+   COLOUR and TYPE: 깊은 겨울 바다색 띠, 흰 바탕, 녹은 정도 그라데이션 / IBM Plex Sans KR.
+   LAYOUT: 상단 띠(제목·모둠·단계 탭) → 단계 화면 하나씩 → 아래 이전/다음 버튼. */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0b1a20);--ink:light-dark(#122229,#e6f0f3);--muted:light-dark(#5b6d74,#9fb3ba);
+--deep:#0f4c5c;--ice:light-dark(#e3f1f6,#173a46);--line:light-dark(#dbe6ea,#24414b);--card:light-dark(#f7fafb,#11252c);
+--red:#d64545;--warn:light-dark(#b4531c,#ffad7a);--ok:light-dark(#1f7a5a,#5fd1a3);
+--safe:#d6604a;--env:#2f9e6a;--eco:#3a78c2;
+--ground:light-dark(#eef4f6,#132830);--road:light-dark(#cfd9de,#2b434c);--bldg:light-dark(#ffffff,#1d3640);
+--field:light-dark(#d7ead2,#1f3b2b);--track:light-dark(#d9a77a,#7a5536);--tree:light-dark(#4f8f63,#3f7a52);--snow:light-dark(#ffffff,#dfe9ee)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Sans KR",system-ui,sans-serif;overflow-x:clip}
+button,input,textarea{font:inherit;color:inherit}button{cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,svg [tabindex]:focus-visible{outline:3px solid #e3b21a;outline-offset:2px}
+.band{padding:clamp(18px,3vw,32px) max(4vw,16px)}.wrap{max-width:1240px;margin:auto}
+.top{background:var(--deep);color:#fff;padding-bottom:0}
+.tophead{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;align-items:end}
+h1{font-size:clamp(26px,3.6vw,38px);line-height:1.1;margin:0}
+.team{display:flex;gap:8px;align-items:center;font-size:15px}
+.team input{min-height:44px;width:12em;border-radius:10px;border:1.5px solid #ffffff66;background:#ffffff1a;color:#fff;padding:6px 10px;font-size:16px}
+.team input::placeholder{color:#cfe6ec}
+nav.steps{display:flex;gap:4px;margin-top:18px;overflow-x:auto}
+nav.steps button{flex:1 0 auto;min-height:52px;border:0;border-radius:12px 12px 0 0;background:#ffffff14;color:#d9ecf1;padding:6px 14px;text-align:left;line-height:1.25}
+nav.steps button small{display:block;font-size:13px;opacity:.85}
+nav.steps button[aria-current=step]{background:var(--bg);color:var(--ink);font-weight:700}
+nav.steps button.done::after{content:" ✓";color:#7fe0b3}
+section.step{display:none}section.step.on{display:block}
+h2{font-size:clamp(24px,3vw,32px);line-height:1.15;margin:0 0 6px}
+.lead{margin:0 0 20px;color:var(--muted);max-width:70ch}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.crit{border:1px solid var(--line);border-top:6px solid var(--c);border-radius:14px;padding:14px;background:var(--card)}
+.crit h3{margin:0;font-size:20px;color:var(--c)}.crit p{margin:2px 0 10px;font-size:14px;color:var(--muted)}
+.add{display:flex;gap:6px}.add input{flex:1;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--bg);font-size:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;min-height:36px}
+.chip{display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:3px 4px 3px 12px;font-size:15px}
+.chip button{border:0;background:transparent;width:30px;height:30px;border-radius:50%;color:var(--muted)}
+.count{font-size:13px;color:var(--muted);margin-top:6px}
+.btn{min-height:44px;border-radius:12px;padding:8px 16px;border:1.5px solid var(--deep);background:var(--bg);font-weight:600}
+.btn.pri{background:var(--deep);color:#fff}.btn:disabled{opacity:.4;cursor:default}
+.keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.key{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--card)}
+.key h3{margin:0;font-size:18px}.key .tags{display:flex;gap:4px;margin:6px 0}
+.tg{font-size:13px;border-radius:12px;padding:1px 8px;color:#fff}
+.key .found{font-size:14px;color:var(--ok);font-weight:600}.key .given{font-size:14px;color:var(--muted)}
+.key .words{font-size:13px;color:var(--muted);margin-top:2px}
+.key.mine{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
+.places{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.place{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card)}
+.place svg{display:block;width:100%;height:auto}
+.ph{font-size:13px;color:var(--muted);padding:4px 12px 0}
+.pb{padding:8px 14px 14px}.pb h3{margin:0 0 4px;font-size:20px}
+.q{margin-top:10px}.q>span{display:block;font-size:14px;color:var(--muted);margin-bottom:4px}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{min-height:44px;flex:1 1 0;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:4px 6px;font-size:15px;white-space:nowrap}
+.seg button[aria-pressed=true]{background:var(--deep);border-color:var(--deep);color:#fff;font-weight:600}
+.seg button:disabled{opacity:.35;cursor:default}
+textarea{width:100%;min-height:84px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg);font-size:16px;resize:vertical}
+.navbtns{display:flex;justify-content:space-between;gap:8px;margin-top:28px}
+.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.sumc{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--card);font-size:15px}
+.sumc b{font-size:17px}
+.warnbox{border:1.5px dashed var(--warn);color:var(--warn);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-weight:600}
+.loader{padding:40px 0;text-align:center;font-size:18px;color:var(--muted)}
+.loader i{display:block;width:220px;height:8px;margin:12px auto 0;border-radius:6px;background:var(--ice);overflow:hidden}
+.loader i::after{content:"";display:block;height:100%;width:0;background:var(--deep);animation:ld 1.2s ease forwards}
+@keyframes ld{to{width:100%}}
+.simtop{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:12px 32px;align-items:end;background:var(--ice);border-radius:16px;padding:14px 18px;margin-bottom:16px}
+.mission{font-size:18px;font-weight:700}.fc{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.fc span{font-size:14px;background:var(--bg);border-radius:14px;padding:2px 10px}
+.budget .lab{display:flex;justify-content:space-between;gap:8px;font-size:15px;margin-bottom:6px}.budget b{white-space:nowrap;font-variant-numeric:tabular-nums}
+.bar{height:14px;border-radius:8px;background:var(--bg);overflow:hidden}.bar span{display:block;height:100%;background:var(--deep);transition:width .3s}.bar.over span{background:var(--red)}
+.budget .msg{font-size:13px;color:var(--muted);margin-top:4px}
+.main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:24px;align-items:start}
+.map{background:var(--ground);border-radius:18px;padding:10px}.map svg{width:100%;height:auto;display:block}.spot{cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);padding:6px 6px 2px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.grad{display:inline-flex;align-items:center;gap:6px}.grad b{display:inline-block;width:110px;height:10px;border-radius:6px;background:linear-gradient(90deg,#d64545,#ec7d2c 35%,#e3b21a 65%,#2f9e6a)}
+.panel{border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--line)}
+.tabs button{min-height:52px;border:0;background:transparent;font-weight:600;display:flex;gap:6px;align-items:center;justify-content:center;border-bottom:3px solid transparent}
+.tabs button[aria-selected=true]{border-bottom-color:var(--deep);background:var(--bg)}
+.dot{width:12px;height:12px;border-radius:50%;flex:none;display:inline-block}
+.pbody{padding:16px}.pbody h3{font-size:20px;margin:0}
+.memo{margin-top:8px;font-size:14px;background:var(--bg);border-left:4px solid var(--deep);border-radius:6px;padding:6px 10px}
+.memo b{display:block;font-size:13px;color:var(--muted)}
+.res{margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--bg);border:1px solid var(--line);border-left-width:6px}
+.res .st{font-size:18px;font-weight:700}.res .sub{display:block;font-size:14px;color:var(--muted);margin-top:2px}.res .env{display:block;font-size:14px;color:var(--warn);margin-top:6px;font-weight:600}
+.all{list-style:none;margin:0;padding:12px 16px;border-top:1px solid var(--line);display:grid;gap:6px}
+.all li{display:grid;grid-template-columns:12px 4.5em minmax(0,1fr) auto;gap:8px;align-items:center;font-size:14px}
+.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.save{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0 12px}
+.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}thead th{font-size:13px;color:var(--muted);font-weight:600}
+.empty{padding:16px;border:1.5px dashed var(--line);border-radius:12px;color:var(--muted);font-size:15px}
+.note{font-size:13px;color:var(--muted);margin:8px 0 0}
+details{border:1px solid var(--line);border-radius:14px;padding:12px 16px;background:var(--card);margin-top:20px}summary{cursor:pointer;font-weight:600}
+details ul{margin:8px 0 0;padding-left:20px;font-size:15px}
+.form{display:grid;gap:14px;max-width:820px}.form label{font-weight:600;display:block;margin-bottom:4px}
+.form .hint{font-weight:400;font-size:14px;color:var(--muted)}
+pre.out{white-space:pre-wrap;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;font:14px/1.6 inherit;max-width:820px}
+.snowfx circle{fill:#fff;opacity:.9}
+@media(prefers-reduced-motion:reduce){.snowfx{display:none}.loader i::after{animation:none;width:100%}}
+
+.bhead{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.room{display:flex;gap:6px;align-items:center;font-size:15px}.room input{min-height:44px;width:8em;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--bg);font-size:16px}
+.live{font-size:14px;font-weight:600;border-radius:20px;padding:4px 12px;background:var(--ice)}.live.on{background:#2f9e6a22;color:var(--ok)}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.filters button{min-height:40px;border:1px solid var(--line);background:var(--bg);border-radius:20px;padding:4px 14px;font-size:15px}
+.filters button[aria-pressed=true]{background:var(--deep);border-color:var(--deep);color:#fff;font-weight:600}
+.bgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
+.bmap{max-width:1000px;width:100%;margin:0 auto}
+.btitle{font-size:20px;margin:8px 0 0}
+.bmap{position:relative;background:var(--ground);border-radius:18px;overflow:hidden;cursor:copy;touch-action:none}
+.bmap svg{display:block;width:100%;height:auto;pointer-events:none}
+.note{position:absolute;width:clamp(118px,17%,190px);padding:8px 9px 6px;border-radius:4px;box-shadow:0 6px 14px #0003;color:#1d2a30;font-size:13px;line-height:1.35;cursor:pointer;user-select:none;transform-origin:center}
+.z-정문{background:#ffe27a}.z-언덕{background:#ffc38a}.z-산책길{background:#b8e6b0}.z-종합{background:#b9d8ff}
+.dnote{margin:0;padding:12px 14px;border-radius:6px;color:#1d2a30;font-size:16px}.dnote .m{font-size:14px;opacity:.8}.muted{color:var(--muted);font-size:14px}
+.note b{display:block;font-size:13px}.note .m{font-size:12px;opacity:.8;margin-top:1px}
+.note p{margin:4px 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.note .f{display:flex;gap:8px;font-size:12px;font-weight:700}.note.mine{outline:2px dashed #0f4c5c88;outline-offset:2px}
+.bmap .note.z-종합 .m{font-size:11px;line-height:1.3}.bmap .note.z-종합 p{-webkit-line-clamp:2;margin:3px 0}
+.note.dragging{cursor:grabbing;box-shadow:0 12px 24px #0005;z-index:5}
+.blist{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;align-items:start}
+.bitem{border:1px solid var(--line);border-left:6px solid var(--zc);border-radius:12px;padding:10px 12px;background:var(--card);cursor:pointer;text-align:left;width:100%}
+.bitem .h{display:flex;justify-content:space-between;gap:8px;font-size:14px}.bitem .h span{color:var(--muted);font-size:13px;white-space:nowrap}
+.bitem .m{font-size:13px;color:var(--muted)}.bitem p{margin:4px 0;font-size:15px}
+.bitem .f{font-size:13px;color:var(--muted)}.bitem .lc{font-size:13px;background:var(--bg);border-radius:8px;padding:4px 8px;margin-top:4px}
+.ov{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:16px;z-index:20}.ov.on{display:flex}
+.modal{background:var(--bg);color:var(--ink);border-radius:18px;width:min(560px,100%);max-height:92vh;overflow:auto;padding:20px}
+.modal h3{margin:0 0 12px;font-size:22px}.modal .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal label{display:block;font-size:14px;font-weight:600;margin:10px 0 4px}
+.modal input[type=text]{width:100%;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--bg);font-size:16px}
+.mact{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:16px}
+.cmts{display:grid;gap:6px;margin:8px 0}.cmt{background:var(--card);border-radius:10px;padding:6px 10px;font-size:15px}.cmt b{font-size:13px}.cmt span{font-size:12px;color:var(--muted);margin-left:6px}
+.likebtn{min-height:44px;border-radius:22px;border:1.5px solid #d64569;color:#c23a5c;background:var(--bg);padding:4px 16px;font-weight:700}.likebtn[disabled]{background:#d6456918;opacity:1}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:24px;font-size:15px;z-index:30;opacity:0;transition:opacity .3s;pointer-events:none}.toast.on{opacity:1}
+@media(max-width:900px){.note{width:clamp(92px,26%,150px);font-size:12px}}
+@media(max-width:900px){.cols,.places,.summary,.main,.simtop{grid-template-columns:1fr}}
+@media(max-width:600px){table{font-size:13px}}
+</style>
+</head>
+<body>
+<header class="band top"><div class="wrap">
+  <div class="tophead"><h1>학교 주변 제설 계획 실험실</h1>
+  <label class="team">모둠 <input id="team" placeholder="모둠 이름" maxlength="20"></label></div>
+  <nav class="steps" id="steps" aria-label="활동 단계"></nav>
+</div></header>
+
+<main class="band"><div class="wrap">
+  <section class="step" id="s1">
+    <h2>1. 기준 세우기</h2>
+    <p class="lead">학교 주변 제설 계획은 안전성·환경성·경제성을 함께 따져야 해요. 각 기준을 판단하려면 무엇을 알아야 할까요? 떠오르는 요소를 최대한 많이 적어 보세요.</p>
+    <div class="cols" id="crit"></div>
+  </section>
+
+  <section class="step" id="s2">
+    <h2>2. 핵심 요소 확인</h2>
+    <p class="lead">선생님이 고른 핵심 요소예요. 초록 테두리는 우리 모둠이 1단계에서 이미 찾아낸 요소예요. (적은 말에 들어 있는 낱말로 자동 확인해요)</p>
+    <div class="keys" id="keys"></div>
+  </section>
+
+  <section class="step" id="s3">
+    <h2>3. 장소 관찰</h2>
+    <p class="lead">세 장소의 그림을 보고 각 요소가 어느 정도인지 고르세요. 그리고 이 장소의 특징이 제설제 사용과 어떤 관련이 있을지 적어 보세요.</p>
+    <div class="places" id="places"></div>
+  </section>
+
+  <section class="step" id="s4">
+    <h2>4. 우리 모둠 시뮬레이터</h2>
+    <p class="lead">3단계에서 관찰한 값으로 시뮬레이터를 만들어요. 날씨·면적·단가·예산은 선생님이 정한 값이에요.</p>
+    <div id="sim"></div>
+  </section>
+
+  <section class="step" id="s5">
+    <h2>5. 우리 반 공유 보드</h2>
+    <p class="lead">4단계에서 고른 최종 채택안이 포스트잇에 자동으로 담겨요. 우리는 <b>왜 그렇게 정했는지 근거</b>만 적어 붙이면 돼요. 다른 모둠의 계획에는 좋아요와 피드백을 남겨요. 지도의 빈 곳을 누르면 그 자리에 붙고, 내 포스트잇은 끌어서 옮길 수 있어요.</p>
+    <div id="board"></div>
+  </section>
+  <div class="navbtns"><button class="btn" id="prev">← 이전 단계</button><button class="btn pri" id="next">다음 단계 →</button></div>
+  <p class="note" style="margin-top:20px">1~4단계 입력은 이 기기의 브라우저에 저장되고, 5단계 공유 보드는 반 전체가 실시간으로 함께 봐요. 장소 그림은 실제 사진으로 바꿀 자리예요. 모든 수치는 수업용 가정값이에요. <button class="btn" id="reset" style="margin-left:6px">처음부터 다시</button></p>
+</div></main>
+<div class="ov" id="ovNew" role="dialog" aria-modal="true" aria-labelledby="nTitle"><form class="modal" id="newForm">
+  <h3 id="nTitle">새 포스트잇 붙이기</h3>
+  <div class="row2"><div><label for="nAuthor">이름</label><input type="text" id="nAuthor" maxlength="12" required></div><div><label for="nTeam">모둠</label><input type="text" id="nTeam" maxlength="20"></div></div>
+  <label>장소</label><div class="seg" id="nZone"></div>
+  <label>우리 모둠 최종 채택안 <span class="muted">(4단계에서 자동으로 가져와요)</span></label><div id="nPlan" class="dnote"></div>
+  <label for="nContent">왜 이렇게 정했나요? (근거)</label><textarea id="nContent" maxlength="300" required placeholder="예: 산책길은 등굣길 지름길이라 사람이 많지만 녹지 옆이라…"></textarea>
+  <div class="mact"><span></span><span><button type="button" class="btn" data-close>취소</button> <button class="btn pri">붙이기</button></span></div>
+</form></div>
+<div class="ov" id="ovNote" role="dialog" aria-modal="true" aria-labelledby="dTitle"><div class="modal" id="noteBox"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const STEPS=[['기준 세우기','2차시'],['핵심 요소','2차시'],['장소 관찰','2차시'],['시뮬레이터·채택안','2·3차시'],['공유 보드','3차시']];
+const CRIT=[{id:'safe',name:'안전성',c:'var(--safe)',q:'사람들이 안전하게 다니려면?'},{id:'env',name:'환경성',c:'var(--env)',q:'주변 환경에 주는 영향은?'},{id:'eco',name:'경제성',c:'var(--eco)',q:'비용과 자원은?'}];
+const KEYS=[
+  {name:'경사',crit:['safe'],kw:['경사','언덕','비탈','기울','오르막','내리막']},
+  {name:'통행량',crit:['safe'],kw:['통행','사람','학생','다니','붐','이용']},
+  {name:'그늘 · 노면 온도',crit:['safe'],kw:['그늘','온도','햇빛','햇볕','기온','추위','춥','얼음','결빙','빙판']},
+  {name:'눈의 양',crit:['safe','eco'],kw:['눈','적설','강설']},
+  {name:'주변 녹지',crit:['env'],kw:['녹지','나무','식물','풀','화단','토양','흙','하천','물','생태']},
+  {name:'제설제 종류',crit:['safe','env','eco'],kw:['제설제','종류','염화','소금','모래','nacl','cacl']},
+  {name:'사용량',crit:['env','eco'],kw:['양','사용량','얼마나','많이','적게']},
+  {name:'예산 · 가격',crit:['eco'],kw:['예산','비용','가격','돈','단가','원']}
+];
+const OBS=[['slope','경사',['평평','완만','급함']],['traffic','통행량',['적음','보통','많음']],['shade','그늘',['없음','조금','많음']],['green','주변 녹지',['없음','있음']]];
+const PLACES=[{id:'gate',name:'정문',area:1500,x:300,y:405,lx:342,ly:382},{id:'hill',name:'언덕',area:1000,x:515,y:165,lx:452,ly:262},{id:'walk',name:'산책길',area:1100,x:88,y:262,lx:22,ly:316}];
+const BUDGET=20000,W={temp:-8,snow:5},NEED=20;
+const MAT={nacl:{name:'NaCl',limit:-9,price:190,cl:.607},cacl2:{name:'CaCl₂',limit:-25,price:480,cl:.639},sand:{name:'모래',price:100,cl:0},none:{name:'무처리',price:0,cl:0}};
+const AMT={low:{name:'적게',g:10},mid:{name:'보통',g:20},high:{name:'많이',g:30}};
+const SHADE={없음:0,조금:-1,많음:-2};
+const blankObs=()=>({slope:'',traffic:'',shade:'',green:'',memo:''});
+const fresh=()=>({team:'',step:1,f:{safe:[],env:[],eco:[]},obs:{gate:blankObs(),hill:blankObs(),walk:blankObs()},cfg:null,sel:'gate',
+  pick:{gate:{m:'none',a:'mid'},hill:{m:'none',a:'mid'},walk:{m:'none',a:'mid'}},plans:[null,null,null],final:null});
+let st=fresh(),loading=false;
+try{const s=JSON.parse(localStorage.getItem('snowsite1')||'null');if(s&&s.f&&s.obs)st=Object.assign(fresh(),s)}catch(e){}
+while(st.plans.length<3)st.plans.push(null);if(st.step>5)st.step=5;
+const store=()=>{try{localStorage.setItem('snowsite1',JSON.stringify(st))}catch(e){}};
+const won=n=>Math.round(n).toLocaleString('ko-KR')+'원';
+const obsDone=()=>PLACES.every(p=>OBS.every(([k])=>st.obs[p.id][k]));
+
+/* ---------- 그림 (사진 자리) ---------- */
+const person=(x,y,c)=>`<g transform="translate(${x},${y})"><circle cy="-9" r="3" fill="${c}"/><path d="M0-6v8M-3-2h6M0 2l-3 6M0 2l3 6" stroke="${c}" stroke-width="2" stroke-linecap="round"/></g>`;
+const ppl=(pts)=>pts.map(([x,y],i)=>person(x,y,['#17324d','#a75a86','#287e86','#b17b36'][i%4])).join('');
+const tree=(x,y,s=1)=>`<g transform="translate(${x},${y}) scale(${s})"><rect x="-2.5" y="0" width="5" height="16" fill="#6b4d33"/><circle cy="-6" r="14" fill="var(--tree)"/><path d="M-11-11Q0-24 11-11" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round"/></g>`;
+const ART={
+ gate:`<svg viewBox="0 0 320 190" role="img" aria-label="정문 그림: 평평하고 넓은 길, 학생이 많음, 햇빛이 드는 곳"><rect width="320" height="190" fill="#bfe3f2"/><circle cx="270" cy="34" r="16" fill="#ffd66b"/>
+  <rect x="90" y="40" width="140" height="56" fill="var(--bldg)" stroke="#8aa"/><rect x="104" y="54" width="14" height="10" fill="#bcd"/><rect x="130" y="54" width="14" height="10" fill="#bcd"/><rect x="176" y="54" width="14" height="10" fill="#bcd"/><rect x="202" y="54" width="14" height="10" fill="#bcd"/>
+  <rect x="96" y="70" width="10" height="34" fill="#7a8c96"/><rect x="214" y="70" width="10" height="34" fill="#7a8c96"/><rect x="96" y="66" width="128" height="8" fill="#5d707a"/>
+  <rect y="96" width="320" height="94" fill="#e9eef1"/><path d="M110 100 L210 100 L300 190 L20 190Z" fill="var(--snow)" stroke="#c7d3da"/>
+  ${ppl([[130,128],[150,122],[172,132],[190,124],[118,150],[160,156],[200,148],[230,168],[95,172],[140,178]])}</svg>`,
+ hill:`<svg viewBox="0 0 320 190" role="img" aria-label="언덕 그림: 경사가 급한 골목, 학생이 몇 명, 햇빛이 드는 곳"><rect width="320" height="190" fill="#bfe3f2"/><circle cx="50" cy="32" r="15" fill="#ffd66b"/>
+  <path d="M0 190 L0 150 L320 40 L320 190Z" fill="#dfe6ea"/><path d="M0 172 L320 62 L320 96 L0 190Z" fill="var(--snow)" stroke="#c7d3da"/>
+  <path d="M0 160 L320 50" stroke="#7a8c96" stroke-width="2.5"/>${[30,90,150,210,270].map(x=>`<path d="M${x} ${160-x*.344} v-14" stroke="#7a8c96" stroke-width="2.5"/>`).join('')}
+  <rect x="230" y="10" width="60" height="44" fill="var(--bldg)" stroke="#8aa"/><path d="M226 12 L260 -4 L294 12" fill="#c46a5a"/>
+  ${ppl([[70,166],[150,138],[230,112],[262,100]])}</svg>`,
+ walk:`<svg viewBox="0 0 320 190" role="img" aria-label="산책길 그림: 나무가 많아 그늘진 길, 학생이 많음, 녹지 옆"><rect width="320" height="190" fill="#9fc6d6"/>
+  <rect y="70" width="320" height="120" fill="var(--field)"/><path d="M150 70 Q120 120 60 190 L150 190 Q170 130 185 70Z" fill="var(--snow)" stroke="#c7d3da"/>
+  <rect width="320" height="190" fill="#06202a" opacity=".28"/>
+  ${tree(30,70,1.3)}${tree(90,60,1.1)}${tree(240,64,1.2)}${tree(290,80,1.4)}${tree(205,110,1.1)}${tree(40,140,1.2)}${tree(270,150,1.3)}
+  ${ppl([[150,96],[140,118],[160,112],[128,140],[112,160],[100,176],[150,150]])}</svg>`
+};
+
+/* ---------- 단계 탭 ---------- */
+function done(i){return i===1?CRIT.every(c=>st.f[c.id].length>0):i===2?st.step>2:i===3?obsDone():i===4?!!st.cfg&&st.final!=null:false}
+function renderNav(){
+  $('steps').innerHTML=STEPS.map(([n,c],i)=>`<button data-go="${i+1}" ${st.step===i+1?'aria-current="step"':''} class="${done(i+1)?'done':''}"><small>${i+1}단계 · ${c}</small>${n}</button>`).join('');
+  document.querySelectorAll('section.step').forEach((s,i)=>s.classList.toggle('on',i+1===st.step));
+  $('prev').disabled=st.step===1;$('next').disabled=st.step===5;$('team').value=st.team;
+}
+
+/* ---------- 1. 기준 ---------- */
+function renderCrit(){
+  $('crit').innerHTML=CRIT.map(c=>`<div class="crit" style="--c:${c.c}"><h3>${c.name}</h3><p>${c.q}</p>
+   <form class="add" data-crit="${c.id}"><input aria-label="${c.name} 요소 입력" placeholder="예: 판단에 필요한 것"><button class="btn pri">추가</button></form>
+   <div class="chips">${st.f[c.id].map((t,i)=>`<span class="chip">${esc(t)}<button type="button" data-del="${c.id}:${i}" aria-label="${esc(t)} 지우기">×</button></span>`).join('')}</div>
+   <div class="count">${st.f[c.id].length}개</div></div>`).join('');
+}
+/* ---------- 2. 핵심 요소 ---------- */
+function renderKeys(){
+  const all=CRIT.flatMap(c=>st.f[c.id].map(t=>({t,c:c.id})));
+  $('keys').innerHTML=KEYS.map(k=>{
+    const hits=all.filter(a=>k.kw.some(w=>a.t.toLowerCase().includes(w)));
+    return `<div class="key ${hits.length?'mine':''}"><h3>${k.name}</h3><div class="tags">${k.crit.map(id=>{const c=CRIT.find(x=>x.id===id);return `<span class="tg" style="background:${c.c}">${c.name}</span>`}).join('')}</div>
+    ${hits.length?`<div class="found">✓ 우리 모둠이 찾았어요</div><div class="words">${hits.slice(0,4).map(h=>esc(h.t)).join(' · ')}</div>`:`<div class="given">선생님이 추가한 요소</div>`}</div>`;
+  }).join('');
+}
+/* ---------- 3. 관찰 ---------- */
+function seg(attr,opts,cur,dis){return `<div class="seg" role="group">${opts.map(([v,n])=>`<button ${attr} data-v="${v}" aria-pressed="${cur===v}" ${dis?'disabled':''}>${n}</button>`).join('')}</div>`}
+function renderPlaces(){
+  $('places').innerHTML=PLACES.map(p=>{const o=st.obs[p.id];return `<article class="place">${ART[p.id]}<div class="ph">사진 자리 (실제 사진으로 바꿀 예정)</div><div class="pb"><h3>${p.name}</h3>
+    ${OBS.map(([k,n,opts])=>`<div class="q"><span>${n}</span>${seg(`data-obs="${p.id}:${k}"`,opts.map(v=>[v,v]),o[k])}</div>`).join('')}
+    <div class="q"><span>이 장소의 특징은 제설제 사용과 어떤 관련이 있을까?</span><textarea data-memo="${p.id}" placeholder="예: 그늘이 많아 노면이 더 차가우니…">${esc(o.memo)}</textarea></div></div></article>`}).join('');
+}
+/* ---------- 4. 시뮬레이터 ---------- */
+const STOPS=[[0,[214,69,69]],[.35,[236,125,44]],[.65,[227,178,26]],[1,[47,158,106]]];
+function mix(t){for(let i=1;i<STOPS.length;i++){const[a,ca]=STOPS[i-1],[b,cb]=STOPS[i];if(t<=b){const k=(t-a)/(b-a);return `rgb(${ca.map((v,j)=>Math.round(v+(cb[j]-v)*k)).join(',')})`}}return 'rgb(47,158,106)'}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function evaluate(p,c){
+  const m=MAT[c.m],g=c.m==='none'?0:AMT[c.a].g,temp=W.temp+SHADE[p.shade],mass=p.area*g/1000,cost=mass*m.price,cl=mass*m.cl;
+  let melt=0,label,why,col,fill,sh;
+  if(c.m==='none')why='아무것도 뿌리지 않았어요.';
+  else if(c.m==='sand'){label='모래만 뿌림 · 얼음은 그대로';sh='모래만 뿌림';why='모래는 얼음을 녹이지 않고 표면 마찰을 높여요.';col='#b08850';fill='url(#sandDots)'}
+  else{const power=clamp((temp-m.limit)/(Math.abs(m.limit)*.2),0,1);
+    melt=power===0?Math.max(0,g-10)/100:clamp(g*power/NEED,0,1);
+    why=(power===0?`노면 ${temp}℃가 ${m.name}의 작용 한계(약 ${m.limit}℃) 이하라 아주 약하게만 작용해요.`:power<1?`노면 ${temp}℃가 ${m.name}의 작용 한계(약 ${m.limit}℃)에 가까워 효과가 ${Math.round(power*100)}%로 떨어져요.`:`노면 ${temp}℃에서 ${m.name}가 충분히 작용해요.`)+` 필요한 양 ${NEED}g/㎡ 중 ${g}g/㎡를 뿌렸어요.`}
+  if(!col){col=mix(melt);fill=col;label=(melt<.25?'얼어 있음':melt<.5?'조금 녹음':melt<.8?'덜 녹음':'녹음')+(c.m!=='none'?` (${Math.round(melt*100)}%)`:'')}
+  const env=m.cl>0&&p.green==='있음'?'⚠ 녹지 옆에서 염화물 제설제 사용':c.m==='sand'?'배수로에 모래가 쌓일 수 있어 청소 필요':'';
+  return {p,c,melt,label,why,env,temp,cost,cl,col,fill,pct:c.m==='sand'?'모래':Math.round(melt*100)+'%',sh:sh||label.replace(/ \(.*\)/,'')};
+}
+const places=cfg=>PLACES.map(p=>Object.assign({},p,cfg[p.id],{memo:st.obs[p.id].memo}));
+function calc(pick,cfg){const r=places(cfg).map(p=>evaluate(p,pick[p.id]));return {r,cost:r.reduce((a,x)=>a+x.cost,0),cl:r.reduce((a,x)=>a+x.cl,0)}}
+const choice=x=>x.c.m==='none'?'무처리':`${MAT[x.c.m].name} ${AMT[x.c.a].name}`;
+const MAPBASE=`<defs><pattern id="sandDots" width="7" height="7" patternUnits="userSpaceOnUse"><rect width="7" height="7" fill="#b08850"/><circle cx="2" cy="2" r="1.1" fill="#6e5228"/><circle cx="5.5" cy="5.5" r=".9" fill="#6e5228"/></pattern></defs>
+ <g stroke="var(--road)" stroke-width="2" stroke-dasharray="5 5" fill="none"><circle cx="515" cy="165" r="44"/><circle cx="515" cy="165" r="60"/><circle cx="515" cy="165" r="76"/></g>
+ <rect x="170" y="110" width="260" height="230" rx="26" fill="none" stroke="var(--road)" stroke-width="18"/><path d="M300 340 L300 378" stroke="var(--road)" stroke-width="18"/>
+ <path d="M430 190 Q460 175 478 170" stroke="var(--road)" stroke-width="14" fill="none" stroke-linecap="round"/><path d="M170 250 Q140 255 118 250" stroke="var(--road)" stroke-width="14" fill="none" stroke-linecap="round"/>
+ <rect x="190" y="130" width="220" height="190" rx="14" fill="var(--bg)" stroke="var(--muted)" stroke-width="1.5"/><rect x="205" y="142" width="190" height="56" rx="6" fill="var(--bldg)" stroke="var(--muted)"/>
+ <text x="300" y="175" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">학교</text>
+ <rect x="215" y="212" width="170" height="96" rx="48" fill="var(--track)"/><rect x="235" y="228" width="130" height="64" rx="32" fill="var(--field)"/>
+ <text x="300" y="265" text-anchor="middle" font-size="14" font-weight="600" fill="var(--ink)">운동장</text>`;
+function treesFor(cfg){let t='';const pos={gate:[[360,440],[250,440]],hill:[[580,250],[450,90]],walk:[[30,180],[70,150],[130,170],[40,230]]};
+  PLACES.forEach(p=>{if(cfg[p.id].green==='있음')pos[p.id].forEach(([x,y])=>t+=`<g transform="translate(${x},${y})"><circle r="11" fill="var(--tree)"/></g>`)});return t}
+function renderSim(){
+  const el=$('sim');
+  if(!obsDone()){const miss=PLACES.filter(p=>OBS.some(([k])=>!st.obs[p.id][k])).map(p=>p.name);
+    el.innerHTML=`<div class="warnbox">3단계에서 ${miss.join(', ')}의 관찰을 마저 골라야 시뮬레이터를 만들 수 있어요.</div><button class="btn pri" data-go="3">3단계로 가기</button>`;return}
+  if(loading){el.innerHTML=`<div class="loader">우리 모둠의 관찰 값을 읽어 시뮬레이터를 만드는 중…<i></i></div>`;return}
+  const cur={};PLACES.forEach(p=>{const o=st.obs[p.id];cur[p.id]={slope:o.slope,traffic:o.traffic,shade:o.shade,green:o.green}});
+  const sum=`<div class="summary">${PLACES.map(p=>{const o=st.obs[p.id];return `<div class="sumc"><b>${p.name}</b><br>경사 ${o.slope} · 통행 ${o.traffic} · 그늘 ${o.shade} · 녹지 ${o.green}<br><span style="color:var(--muted);font-size:14px">→ 노면 ${W.temp+SHADE[o.shade]}℃${o.green==='있음'?' · 녹지 경고 대상':''}</span></div>`}).join('')}</div>`;
+  if(!st.cfg){el.innerHTML=sum+`<button class="btn pri" id="build" style="font-size:18px;padding:12px 24px">▶ 시뮬레이터 만들기</button>`;return}
+  const changed=JSON.stringify(cur)!==JSON.stringify(st.cfg);
+  const R=calc(st.pick,st.cfg),over=R.cost>BUDGET;
+  el.innerHTML=(changed?`<div class="warnbox">3단계 관찰 내용이 바뀌었어요. <button class="btn" id="build">바뀐 값으로 다시 만들기</button></div>`:'')+
+  `<div class="simtop"><div><div class="mission">${esc(st.team||'우리')} 모둠 · 예산 20,000원으로 정문·언덕·산책길을 어떻게 관리할까요?</div><div class="fc"><span>내일 아침 예보</span><span>노면 −8℃</span><span>눈 5cm</span></div></div>
+   <div class="budget"><div class="lab"><span>사용한 재료비</span><b>${won(R.cost)} / ${won(BUDGET)}</b></div><div class="bar ${over?'over':''}"><span style="width:${Math.min(100,R.cost/BUDGET*100)}%"></span></div><div class="msg">${over?`예산을 ${won(R.cost-BUDGET)} 넘었어요.`:`남은 예산 ${won(BUDGET-R.cost)}`}</div></div></div>
+  <div class="main"><section class="map"><svg viewBox="0 0 600 470" role="img" aria-label="학교와 세 장소의 배치도">${MAPBASE}${treesFor(st.cfg)}${R.r.map(x=>{const p=x.p,sel=st.sel===p.id;
+     const facts=[`경사 ${p.slope}`,`통행 ${p.traffic}`,`녹지 ${p.green}`,`그늘 ${p.shade}${SHADE[p.shade]?`(노면 ${SHADE[p.shade]}℃)`:''}`];
+     return `<g class="spot" data-sel="${p.id}" tabindex="0" role="button" aria-label="${p.name} 선택">${sel?`<circle cx="${p.x}" cy="${p.y}" r="38" fill="none" stroke="var(--ink)" stroke-width="3"/>`:''}${SHADE[p.shade]?`<circle cx="${p.x}" cy="${p.y}" r="44" fill="#00000018"/>`:''}
+      <circle cx="${p.x}" cy="${p.y}" r="30" fill="${x.fill}" stroke="var(--bg)" stroke-width="4"/>
+      <text x="${p.x}" y="${p.y-2}" text-anchor="middle" font-size="${p.name.length>2?13:15}" font-weight="700" fill="#fff" stroke="#0006" stroke-width="2.5" paint-order="stroke">${p.name}</text>
+      <text x="${p.x}" y="${p.y+15}" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" stroke="#0006" stroke-width="2.5" paint-order="stroke">${x.pct}</text></g>
+      <g font-size="13" fill="var(--ink)"><text x="${p.lx}" y="${p.ly}" font-weight="700" fill="${x.col}">● ${x.sh}</text>${facts.map((f,i)=>`<text x="${p.lx}" y="${p.ly+18*(i+1)}">${f}</text>`).join('')}</g>`}).join('')}<g class="snowfx" id="snowfx"></g></svg>
+   <div class="legend"><span>녹은 정도</span><span class="grad">0%<b></b>100%</span><span><i style="background:#b08850"></i>모래만 뿌림</span><span>· 장소를 누르면 선택돼요</span></div></section>
+  <section class="panel"><div class="tabs" role="tablist">${R.r.map(x=>`<button role="tab" data-sel="${x.p.id}" aria-selected="${st.sel===x.p.id}"><span class="dot" style="background:${x.col}"></span>${x.p.name}</button>`).join('')}</div>
+   ${(()=>{const x=R.r.find(y=>y.p.id===st.sel);return `<div class="pbody"><h3>${x.p.name}</h3>${x.p.memo?`<div class="memo"><b>우리 모둠 메모</b>${esc(x.p.memo)}</div>`:''}
+    <div class="q"><span>제설제</span>${seg('data-k="m"',Object.entries(MAT).map(([k,v])=>[k,v.name]),x.c.m)}</div>
+    <div class="q"><span>사용량</span>${seg('data-k="a"',Object.entries(AMT).map(([k,v])=>[k,`${v.name} ${v.g}g/㎡`]),x.c.a,x.c.m==='none')}</div>
+    <div class="res" style="border-left-color:${x.col}" aria-live="polite"><span class="st">${x.label}</span><span class="sub">${x.why}</span><span class="sub">재료비 ${won(x.cost)}${x.cl>0?` · 염화 이온 ${x.cl.toFixed(1)}kg`:''}</span>${x.env?`<span class="env">${x.env}</span>`:''}</div></div>`})()}
+   <ul class="all">${R.r.map(y=>`<li><span class="dot" style="background:${y.col}"></span><b>${y.p.name}</b><span>${choice(y)}</span><span class="n">${won(y.cost)}</span></li>`).join('')}<li><span></span><b>합계</b><span>염화 이온 ${R.cl.toFixed(1)}kg</span><span class="n" style="font-weight:700">${won(R.cost)}</span></li></ul></section></div>
+  <div class="save"><button class="btn pri" data-slot="0">방안 1로 저장</button><button class="btn pri" data-slot="1">방안 2로 저장</button><button class="btn pri" data-slot="2">방안 3으로 저장</button><button class="btn" id="clearPlans">저장한 방안 지우기</button></div>
+  ${cmpTable()}
+  <details><summary>ⓘ 이 시뮬레이터가 알려주는 것과 알려주지 못하는 것</summary><ul>
+   <li><b>우리 모둠 관찰이 반영되는 곳:</b> 그늘(없음 0℃ · 조금 −1℃ · 많음 −2℃만큼 노면이 더 차가움), 녹지(염화물 사용 시 경고). 경사·통행량은 표시만 하고 계산에는 쓰지 않아요. 중요도는 여러분이 판단해요.</li>
+   <li><b>녹은 정도:</b> 온도별 효과 × (뿌린 양 ÷ 필요한 양). 노면 온도가 작용 한계에 가까울수록 효과가 낮아지고, 한계 이하에서는 아주 약하게만 작용해요(보통 10%, 많이 20%).</li>
+   <li><b>재료비·염화 이온:</b> 면적 × 사용량 × 단가, 제설제 질량 × 염화 이온 비율(NaCl 60.7%, CaCl₂ 63.9%). 인건비·장비비, 실제 유출량은 포함하지 않아요.</li>
+   <li><b>알려주지 못하는 것:</b> 실제 미끄러짐·사고 위험, 얼음이 녹는 속도, 식물·하천의 실제 피해.</li></ul></details>`;
+  startSnow();
+}
+function cmpTable(){
+  if(!st.plans.some(Boolean))return `<div class="empty">시뮬레이터에서 방안을 만든 뒤 저장 버튼을 누르면 최대 세 방안을 나란히 비교할 수 있어요.</div>`;
+  const P=st.plans.map(p=>p&&calc(p,st.cfg)),cell=(R,f)=>R?f(R):'<span style="color:var(--muted)">저장 안 됨</span>';
+  const rows=PLACES.map((p,i)=>[p.name,R=>{const x=R.r[i];return `<span class="dot" style="background:${x.col};margin-right:6px"></span>${choice(x)} · <b>${x.label}</b>${x.env?`<br><span style="color:var(--warn);font-size:13px">${x.env}</span>`:''}`}]);
+  rows.push(['재료비',R=>won(R.cost)+(R.cost>BUDGET?' <span style="color:var(--red)">(초과)</span>':''),1],['염화 이온',R=>R.cl.toFixed(1)+'kg',1]);
+  const saved=st.plans.map((p,i)=>p?[String(i),`방안 ${i+1}`]:null).filter(Boolean);
+  return `<div class="scroll"><table><thead><tr><th>장소</th>${P.map((R,i)=>`<th>방안 ${i+1}${st.final===i?' ★ 채택':''}</th>`).join('')}</tr></thead><tbody>${rows.map(([k,f,n])=>`<tr><th scope="row">${k}</th>${P.map((R,i)=>`<td class="${n?'n':''}" style="${st.final===i?'background:var(--ice)':''}">${cell(R,f)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+  <p class="note">시뮬레이터는 정답을 정하지 않아요. 세 방안의 차이를 근거로 삼고, 알려주지 못하는 것은 추가 자료로 판단하세요.</p>
+  <div class="simtop" style="margin-top:16px;display:block"><div class="mission">우리 모둠 최종 채택안</div><p class="note" style="margin:2px 0 10px">하나를 고르면 5단계 공유 보드의 포스트잇에 자동으로 담겨요.</p>${seg('data-final',saved,st.final==null?'':String(st.final))}
+   ${st.final!=null?`<div style="margin-top:12px"><button class="btn pri" data-go="5">이 채택안으로 공유 보드에 붙이러 가기 →</button></div>`:''}</div>`;
+}
+let snowRaf=0;
+function startSnow(){const fx=$('snowfx');if(!fx)return;const flakes=[];for(let i=0;i<30;i++){const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('r',1.2+(i%3)*.6);fx.appendChild(c);flakes.push({c,x:(i*97)%600,y:(i*53)%470,v:.35+(i%4)*.2})}
+  cancelAnimationFrame(snowRaf);const tick=t=>{flakes.forEach((f,i)=>{f.y=(f.y+f.v)%470;f.c.setAttribute('cx',(f.x+Math.sin(t/900+i)*6).toFixed(1));f.c.setAttribute('cy',f.y.toFixed(1))});snowRaf=requestAnimationFrame(tick)};snowRaf=requestAnimationFrame(tick)}
+/* ---------- 5. 공유 보드 ---------- */
+/* Firebase 설정값을 아래에 넣으면 실시간 공유가 켜져요. 비워 두면 이 기기에서만 보이는 연습 모드예요. */
+const FB_CONFIG={apiKey:"AIzaSyCC5dgoJmkde8BjakXsFAE09eFVIvm3wzI",authDomain:"snow-plan-lab.firebaseapp.com",projectId:"snow-plan-lab",storageBucket:"snow-plan-lab.firebasestorage.app",messagingSenderId:"112611986003",appId:"1:112611986003:web:9c68463deb13ceb00814a6"};
+const TEACHER_EMAILS=['ssyyss1208@ewha.ac.kr'];   // 교사 Google 계정 이메일 (이 계정으로 로그인하면 모든 포스트잇 삭제·이동 가능)
+const ZONES=[['정문','#e3b21a'],['언덕','#ec8a3a'],['산책길','#2f9e6a'],['종합','#3a78c2']];
+const zc=z=>(ZONES.find(x=>x[0]===z)||ZONES[3])[1];
+const B={inited:false,mode:'local',room:'',notes:[],filter:'all',uid:'',teacher:false,email:'',fb:null,unsub:null,active:null,pending:null,zone:'종합',liked:new Set()};
+try{B.room=localStorage.getItem('snowboard-room')||'';B.uid=localStorage.getItem('snowboard-uid')||'';B.liked=new Set(JSON.parse(localStorage.getItem('snowboard-liked')||'[]'))}catch(e){}
+if(!B.uid){B.uid='local-'+Math.random().toString(36).slice(2,10);try{localStorage.setItem('snowboard-uid',B.uid)}catch(e){}}
+const saveLiked=()=>{try{localStorage.setItem('snowboard-liked',JSON.stringify([...B.liked]))}catch(e){}};
+const roomId=()=>(B.room||'demo').replace(/[^0-9A-Za-z가-힣_-]/g,'').slice(0,20)||'demo';
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2200)}
+function ago(ts){const d=(Date.now()-ts)/1000;return d<60?'방금':d<3600?Math.floor(d/60)+'분 전':d<86400?Math.floor(d/3600)+'시간 전':Math.floor(d/86400)+'일 전'}
+const canEdit=n=>B.teacher||n.uid===B.uid;
+const STRIP_Y=81;   // 종합 칸 위쪽(%) — 지도 높이 600 중 478부터
+const inStrip=y=>y>=STRIP_Y-3;
+function stripSlot(){const k=B.notes.filter(n=>n.zone==='종합').length;return {x:4+(k%4)*24+Math.floor(k/4)*1.5,y:STRIP_Y+1+Math.floor(k/4)*2}}
+function nearestZone(x,y){const pts={정문:[50,67.5],언덕:[85.8,27.5],산책길:[14.7,43.7]};let best='정문',d=1e9;for(const[z,[px,py]]of Object.entries(pts)){const dd=(px-x)**2+(py-y)**2;if(dd<d){d=dd;best=z}}return best}
+
+/* 저장소: 연습 모드(localStorage) / 실시간 모드(Firebase Firestore) */
+const LOCAL={
+  key:()=>'snowboard-notes-'+roomId(),
+  load(){try{B.notes=JSON.parse(localStorage.getItem(this.key())||'[]')}catch(e){B.notes=[]}renderBoard()},
+  save(){try{localStorage.setItem(this.key(),JSON.stringify(B.notes))}catch(e){}renderBoard()},
+  add(n){B.notes.push({...n,id:'n'+Date.now()});this.save()},
+  patch(id,f){const n=B.notes.find(x=>x.id===id);if(n){f(n);this.save()}},
+  like(id){this.patch(id,n=>n.likes=(n.likes||0)+1)},
+  comment(id,c){this.patch(id,n=>(n.comments=n.comments||[]).push(c))},
+  move(id,x,y){this.patch(id,n=>{n.x=x;n.y=y})},
+  del(id){B.notes=B.notes.filter(x=>x.id!==id);this.save()}
+};
+const LIVE={
+  col(){const f=B.fb;return f.fs.collection(f.db,'rooms',roomId(),'notes')},
+  ref(id){const f=B.fb;return f.fs.doc(f.db,'rooms',roomId(),'notes',id)},
+  load(){if(B.unsub)B.unsub();B.notes=[];renderBoard();
+    B.unsub=B.fb.fs.onSnapshot(this.col(),snap=>{B.notes=snap.docs.map(d=>({id:d.id,...d.data()}));renderBoard();if(B.active)renderNote()},
+      err=>{toast('보드를 불러오지 못했어요: '+err.code)})},
+  add(n){return B.fb.fs.addDoc(this.col(),n)},
+  like(id){return B.fb.fs.updateDoc(this.ref(id),{likes:B.fb.fs.increment(1)})},
+  comment(id,c){return B.fb.fs.updateDoc(this.ref(id),{comments:B.fb.fs.arrayUnion(c)})},
+  move(id,x,y){return B.fb.fs.updateDoc(this.ref(id),{x,y})},
+  del(id){return B.fb.fs.deleteDoc(this.ref(id))}
+};
+const store6=()=>B.mode==='live'?LIVE:LOCAL;
+async function op(name,...a){try{await store6()[name](...a)}catch(e){console.error(e);toast('저장하지 못했어요. 권한이나 연결을 확인하세요.')}}
+
+async function initBoard(){
+  if(!B.inited){B.inited=true;
+    if(FB_CONFIG){B.mode='connecting';renderBoard();
+      try{const V='11.6.1',base=`https://www.gstatic.com/firebasejs/${V}/`;
+        const [app,auth,fs]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
+        const a=app.initializeApp(FB_CONFIG),au=auth.getAuth(a),db=fs.getFirestore(a);
+        B.fb={auth,au,fs,db};
+        auth.onAuthStateChanged(au,u=>{if(!u){auth.signInAnonymously(au);return}
+          B.uid=u.uid;B.email=u.email||'';B.teacher=!!u.email&&TEACHER_EMAILS.includes(u.email);
+          if(B.mode!=='live'){B.mode='live';LIVE.load()}else renderBoard()});
+      }catch(e){console.error(e);B.mode='local';toast('실시간 연결에 실패해 연습 모드로 열었어요.');LOCAL.load()}
+    }else LOCAL.load();
+  }else renderBoard();
+}
+function renderBoard(){
+  if(st.step!==5)return;
+  const el=$('board'),notes=B.notes.slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  const shown=notes.filter(n=>B.filter==='all'||n.zone===B.filter);
+  const cnt=z=>notes.filter(n=>n.zone===z).length;
+  const status=B.mode==='live'?`<span class="live on">● 실시간 연결됨 · ${esc(roomId())}반 보드</span>`:B.mode==='connecting'?'<span class="live">연결 중…</span>':'<span class="live">연습 모드 · 이 기기에서만 보여요</span>';
+  const teacherBtn=B.mode==='live'?(B.email?`<button class="btn" id="tOut">${B.teacher?'교사':'로그인'}: ${esc(B.email)} · 로그아웃</button>`:'<button class="btn" id="tIn">교사 로그인</button>'):'';
+  el.innerHTML=`<div class="bhead"><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><label class="room">반 코드 <input id="roomIn" value="${esc(B.room)}" placeholder="예: 3-2" maxlength="20"></label>${status}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">${teacherBtn}<button class="btn pri" id="newNote">＋ 새 포스트잇 붙이기</button></div></div>
+   <div class="filters" role="group" aria-label="장소별 보기"><button data-flt="all" aria-pressed="${B.filter==='all'}">전체 (${notes.length})</button>${ZONES.map(([z,c])=>`<button data-flt="${z}" aria-pressed="${B.filter===z}"><span class="dot" style="background:${c};margin-right:6px"></span>${z} (${cnt(z)})</button>`).join('')}</div>
+   <div class="bgrid"><div class="bmap" id="bmap" aria-label="지도 보드. 빈 곳을 누르면 그 자리에 포스트잇을 붙여요."><svg viewBox="0 0 600 600" aria-hidden="true">${MAPBASE}<rect x="14" y="478" width="572" height="112" rx="14" fill="var(--bg)" fill-opacity=".55" stroke="#3a78c2" stroke-width="2.5" stroke-dasharray="9 7"/><text x="28" y="472" font-size="14" font-weight="700" fill="#3a78c2">종합 계획 칸 · 모둠의 전체 계획 포스트잇</text>${PLACES.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="26" fill="${zc(p.name)}" opacity=".85"/><text x="${p.x}" y="${p.y+5}" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">${p.name}</text>`).join('')}</svg>
+     ${shown.map(n=>`<div class="note z-${esc(n.zone)} ${n.uid===B.uid?'mine':''}" data-note="${esc(n.id)}" style="left:${+n.x||0}%;top:${+n.y||0}%;transform:rotate(${+n.rot||0}deg)" tabindex="0" role="button" aria-label="${esc(n.author)}의 포스트잇 열기">
+       <b>${esc(n.zone)} · ${esc(n.author)}${n.team?` (${esc(n.team)})`:''}</b>${planLines(n,n.zone)}<p>${esc(n.content)}</p>
+       <div class="f"><span style="color:#c23a5c">♥ ${+n.likes||0}</span><span>💬 ${(n.comments||[]).length}</span></div></div>`).join('')}</div>
+    <h3 class="btitle">우리 반 의견 &amp; 피드백 (${shown.length})</h3><div class="blist">${shown.length?shown.map(n=>{const lc=(n.comments||[]).slice(-1)[0];return `<button class="bitem" data-note="${esc(n.id)}" style="--zc:${zc(n.zone)}"><div class="h"><b>${esc(n.zone)} · ${esc(n.author)}${n.team?` (${esc(n.team)})`:''}</b><span>${ago(n.createdAt||Date.now())}</span></div>
+      ${planLines(n,n.zone)}<p>${esc(n.content)}</p><div class="f">♥ ${+n.likes||0} · 💬 피드백 ${(n.comments||[]).length}개</div>${lc?`<div class="lc">↳ ${esc(lc.author)}: ${esc(lc.text)}</div>`:''}</button>`}).join(''):'<div class="empty">아직 붙은 포스트잇이 없어요. 첫 번째로 우리 모둠의 계획을 붙여 보세요.</div>'}</div></div>`;
+}
+function openNew(coords){
+  if(!finalPlan()){toast('4단계에서 최종 채택안을 먼저 골라 주세요.');go(4);return}
+  B.pending=coords||null;$('nAuthor').value=$('nAuthor').value||'';$('nTeam').value=$('nTeam').value||st.team||'';
+  renderZoneSeg();$('ovNew').classList.add('on');$('nAuthor').focus();
+}
+function renderZoneSeg(){$('nZone').innerHTML=ZONES.map(([z])=>`<button type="button" data-zone="${z}" aria-pressed="${B.zone===z}">${z==='종합'?'종합(전체 계획)':z}</button>`).join('');renderPreview()}
+function closeOv(){document.querySelectorAll('.ov').forEach(o=>o.classList.remove('on'));B.active=null}
+function renderNote(){
+  const n=B.notes.find(x=>x.id===B.active);if(!n){closeOv();return}
+  const liked=B.liked.has(roomId()+':'+n.id);
+  $('noteBox').innerHTML=`<h3 id="dTitle"><span class="dot" style="background:${zc(n.zone)};margin-right:8px"></span>${esc(n.zone)} · ${esc(n.author)}${n.team?` (${esc(n.team)})`:''}</h3>
+   <p class="dnote z-${esc(n.zone)}">${n.planNo?`<div class="m" style="font-weight:700">최종 채택안 (방안 ${+n.planNo})</div>`:''}${planLines(n,n.zone)}<div style="margin-top:6px"><b>근거</b> ${esc(n.content)}</div></p>
+   <div style="display:flex;gap:10px;align-items:center;margin:10px 0"><button class="likebtn" id="likeBtn" ${liked?'disabled':''}>♥ ${liked?'좋아요 했어요':'좋아요'} ${+n.likes||0}</button><span class="muted">${ago(n.createdAt||Date.now())}</span></div>
+   <h3 style="font-size:17px;margin:14px 0 4px">피드백 ${(n.comments||[]).length}개</h3>
+   <div class="cmts">${(n.comments||[]).map(c=>`<div class="cmt"><b>${esc(c.author)}</b><span>${ago(c.at||Date.now())}</span><br>${esc(c.text)}</div>`).join('')||'<div class="muted">아직 피드백이 없어요.</div>'}</div>
+   <form id="cForm"><div class="row2"><div><label for="cAuthor">이름</label><input type="text" id="cAuthor" maxlength="12" required value="${esc($('nAuthor').value)}"></div><div></div></div>
+   <label for="cText">피드백</label><textarea id="cText" maxlength="200" required placeholder="잘한 점이나 보완할 점을 근거와 함께 적어요."></textarea>
+   <div class="mact">${canEdit(n)?'<button type="button" class="btn" id="delNote" style="border-color:var(--red);color:var(--red)">삭제</button>':'<span></span>'}<span><button type="button" class="btn" data-close>닫기</button> <button class="btn pri">피드백 남기기</button></span></div></form>`;
+  $('ovNote').classList.add('on');
+}
+function finalPlan(){
+  if(!st.cfg||st.final==null||!st.plans[st.final])return null;const R=calc(st.plans[st.final],st.cfg);
+  return {no:st.final+1,places:Object.fromEntries(R.r.map(x=>[x.p.name,`${choice(x)} → ${x.label}`])),cost:won(R.cost),cl:R.cl.toFixed(1)+'kg',env:R.r.some(x=>x.env.startsWith('⚠'))};
+}
+function planLines(n,zone){const P=n.plan||{};const names=zone==='종합'?['정문','언덕','산책길']:[zone];
+  return names.filter(k=>P[k]).map(k=>`<div class="m">${esc(k)}: ${esc(P[k])}</div>`).join('')+(zone==='종합'&&n.cost?`<div class="m">재료비 ${esc(n.cost)} · 염화 이온 ${esc(n.cl||'')}</div>`:'')}
+function renderPreview(){const p=finalPlan();$('nPlan').className='dnote z-'+B.zone;
+  $('nPlan').innerHTML=p?planLines({plan:p.places,cost:p.cost,cl:p.cl},B.zone):'4단계에서 최종 채택안을 먼저 골라 주세요.'}
+/* 드래그(내 포스트잇만) */
+let drag=null;
+document.addEventListener('pointerdown',e=>{const nEl=e.target.closest('.bmap .note');if(!nEl)return;const n=B.notes.find(x=>x.id===nEl.dataset.note);if(!n)return;
+  drag={el:nEl,n,sx:e.clientX,sy:e.clientY,moved:false,can:canEdit(n)};if(drag.can)nEl.setPointerCapture(e.pointerId)});
+document.addEventListener('pointermove',e=>{if(!drag||!drag.can)return;const dx=e.clientX-drag.sx,dy=e.clientY-drag.sy;if(!drag.moved&&Math.hypot(dx,dy)<5)return;
+  drag.moved=true;drag.el.classList.add('dragging');const r=$('bmap').getBoundingClientRect();
+  drag.x=clamp((+drag.n.x||0)+dx/r.width*100,0,82);drag.y=drag.n.zone==='종합'?clamp((+drag.n.y||0)+dy/r.height*100,STRIP_Y,STRIP_Y+4):clamp((+drag.n.y||0)+dy/r.height*100,0,62);drag.el.style.left=drag.x+'%';drag.el.style.top=drag.y+'%'});
+document.addEventListener('pointerup',()=>{if(!drag)return;const d=drag;drag=null;
+  if(d.moved){d.el.classList.remove('dragging');op('move',d.n.id,+d.x.toFixed(1),+d.y.toFixed(1));d.n.x=d.x;d.n.y=d.y;d.el.dataset.dragged='1';setTimeout(()=>delete d.el.dataset.dragged,50)}});
+
+function render(){
+  renderNav();
+  if(st.step===1)renderCrit();if(st.step===2)renderKeys();if(st.step===3)renderPlaces();if(st.step===4)renderSim();if(st.step===5)initBoard();
+  store();
+}
+const go=n=>{st.step=clamp(n,1,5);render();try{window.scrollTo({top:0,behavior:'smooth'})}catch(e){}};
+
+document.addEventListener('submit',e=>{
+  if(e.target.id==='newForm'){e.preventDefault();const author=$('nAuthor').value.trim(),content=$('nContent').value.trim(),fp=finalPlan();if(!author||!content||!fp)return;
+    const base={정문:{x:40,y:50},언덕:{x:66,y:20},산책길:{x:4,y:28}}[B.zone];
+    const c=B.zone==='종합'?stripSlot():(B.pending&&!inStrip(B.pending.y)?B.pending:{x:clamp(base.x+(Math.random()-.5)*14,0,82),y:clamp(base.y+(Math.random()-.5)*12,0,62)});
+    const n={uid:B.uid,author:author.slice(0,12),team:$('nTeam').value.trim().slice(0,20),zone:B.zone,planNo:fp.no,plan:fp.places,cost:fp.cost,cl:fp.cl,
+      content:content.slice(0,300),x:+c.x.toFixed(1),y:+c.y.toFixed(1),rot:+(Math.random()*6-3).toFixed(1),likes:0,comments:[],createdAt:Date.now()};
+    op('add',n);$('nContent').value='';closeOv();if(B.filter!=='all'&&B.filter!==n.zone)B.filter='all';toast(B.mode==='live'?'모든 학생의 보드에 붙었어요!':'포스트잇을 붙였어요.');return}
+  if(e.target.id==='cForm'){e.preventDefault();const a=$('cAuthor').value.trim(),t=$('cText').value.trim();if(!a||!t)return;
+    $('nAuthor').value=$('nAuthor').value||a;op('comment',B.active,{author:a.slice(0,12),text:t.slice(0,200),at:Date.now(),uid:B.uid});$('cText').value='';if(B.mode==='local')renderNote();toast('피드백을 남겼어요.');return}
+});
+document.addEventListener('submit',e=>{const f=e.target.closest('[data-crit]');if(!f)return;e.preventDefault();const i=f.querySelector('input'),v=i.value.trim();
+  if(v){st.f[f.dataset.crit].push(v.slice(0,40));renderCrit();renderNav();store();document.querySelector(`[data-crit="${f.dataset.crit}"] input`).focus()}});
+document.addEventListener('click',e=>{
+  if(st.step===5){
+    if(e.target.closest('[data-close]')||e.target.classList.contains('ov')){closeOv();return}
+    const nb=e.target.closest('[data-note]');if(nb){if(nb.dataset.dragged)return;B.active=nb.dataset.note;renderNote();return}
+    const fl=e.target.closest('[data-flt]');if(fl){B.filter=fl.dataset.flt;renderBoard();return}
+    const zb=e.target.closest('[data-zone]');if(zb){B.zone=zb.dataset.zone;renderZoneSeg();return}
+    if(e.target.closest('#newNote')){openNew();return}
+    if(e.target.closest('#likeBtn')){const k=roomId()+':'+B.active;if(B.liked.has(k))return;B.liked.add(k);saveLiked();op('like',B.active);if(B.mode==='local')renderNote();else{const b=$('likeBtn');b.disabled=true}return}
+    if(e.target.closest('#delNote')){const b=e.target.closest('#delNote');if(!b.dataset.sure){b.dataset.sure=1;b.textContent='정말 삭제할까요?';return}op('del',B.active);closeOv();toast('삭제했어요.');return}
+    if(e.target.closest('#tIn')){const f=B.fb;f.auth.signInWithPopup(f.au,new f.auth.GoogleAuthProvider()).catch(()=>toast('로그인 창이 막혔어요.'));return}
+    if(e.target.closest('#tOut')){const f=B.fb;f.auth.signOut(f.au);return}
+    const map=e.target.closest('#bmap');if(map&&!e.target.closest('.note')){const r=map.getBoundingClientRect();
+      const px=(e.clientX-r.left)/r.width*100,py=(e.clientY-r.top)/r.height*100;
+      B.zone=inStrip(py)?'종합':nearestZone(px,py);openNew({x:clamp(px-6,0,82),y:clamp(py-4,0,62)});return}
+  }
+  const g=e.target.closest('[data-go]');if(g){go(+g.dataset.go);return}
+  const s=e.target.closest('[data-sel]');if(s){st.sel=s.dataset.sel;render();return}
+  const b=e.target.closest('button');if(!b||b.disabled)return;
+  if(b.id==='prev')go(st.step-1);else if(b.id==='next')go(st.step+1);
+  else if(b.dataset.del){const[c,i]=b.dataset.del.split(':');st.f[c].splice(+i,1);render()}
+  else if(b.dataset.obs){const[p,k]=b.dataset.obs.split(':');st.obs[p][k]=b.dataset.v;render()}
+  else if(b.id==='build'){loading=true;render();setTimeout(()=>{const c={};PLACES.forEach(p=>{const o=st.obs[p.id];c[p.id]={slope:o.slope,traffic:o.traffic,shade:o.shade,green:o.green}});st.cfg=c;loading=false;render()},1300)}
+  else if(b.dataset.k){st.pick[st.sel][b.dataset.k]=b.dataset.v;render()}
+  else if(b.dataset.slot){st.plans[+b.dataset.slot]=JSON.parse(JSON.stringify(st.pick));render()}
+  else if(b.id==='clearPlans'){st.plans=[null,null,null];st.final=null;render()}
+  else if(b.dataset.final!=null){st.final=+b.dataset.v;render()}
+  else if(b.id==='reset'){if(b.dataset.sure){st=fresh();render()}else{b.dataset.sure=1;b.textContent='정말 지울까요? 한 번 더 누르기';setTimeout(()=>{delete b.dataset.sure;b.textContent='처음부터 다시'},3000)}}
+});
+document.addEventListener('input',e=>{const t=e.target;
+  if(t.id==='roomIn'){clearTimeout(t._t);t._t=setTimeout(()=>{B.room=t.value.trim();try{localStorage.setItem('snowboard-room',B.room)}catch(e){}store6().load();setTimeout(()=>{const i=$('roomIn');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},0)},600);return}
+  if(t.id==='team'){st.team=t.value;store()}
+  else if(t.dataset.memo){st.obs[t.dataset.memo].memo=t.value;store()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeOv();return}const nk=e.target.closest&&e.target.closest('.note[data-note]');if(nk&&(e.key==='Enter'||e.key===' ')){e.preventDefault();B.active=nk.dataset.note;renderNote();return}const s=e.target.closest&&e.target.closest('.spot');if(s&&(e.key==='Enter'||e.key===' ')){e.preventDefault();st.sel=s.dataset.sel;render()}});
+render();
+}
+</script>
+</body>
+</html>

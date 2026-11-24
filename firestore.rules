@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 반별 공유 보드: rooms/{반 코드}/notes/{포스트잇}
+    match /rooms/{room}/notes/{noteId} {
+      function signedIn() { return request.auth != null; }
+      function isTeacher() {
+        return signedIn() && request.auth.token.email != null
+          && request.auth.token.email in ['ssyyss1208@ewha.ac.kr'];
+      }
+      function isOwner() { return signedIn() && resource.data.uid == request.auth.uid; }
+      function onlyChanged(keys) {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+      }
+
+      allow read: if signedIn();
+
+      // 새 포스트잇: 본인 uid로만, 글자 수 제한
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.content is string
+        && request.resource.data.content.size() <= 300
+        && request.resource.data.author.size() <= 12
+        && request.resource.data.likes == 0
+        && request.resource.data.comments.size() == 0;
+
+      allow update: if
+        // 누구나: 좋아요 1개 올리기
+        (signedIn() && onlyChanged(['likes'])
+          && request.resource.data.likes == resource.data.likes + 1)
+        // 누구나: 피드백 1개 추가하기
+        || (signedIn() && onlyChanged(['comments'])
+          && request.resource.data.comments.size() == resource.data.comments.size() + 1)
+        // 작성자·교사: 위치 옮기기
+        || ((isOwner() || isTeacher()) && onlyChanged(['x', 'y']))
+        // 교사: 무엇이든 수정 (부적절한 피드백 정리 등)
+        || isTeacher();
+
+      // 삭제: 작성자 본인 또는 교사
+      allow delete: if isOwner() || isTeacher();
+    }
+  }
+}

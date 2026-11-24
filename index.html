@@ -146,14 +146,39 @@ pre.out{white-space:pre-wrap;background:var(--card);border:1px solid var(--line)
 .likebtn{min-height:44px;border-radius:22px;border:1.5px solid #d64569;color:#c23a5c;background:var(--bg);padding:4px 16px;font-weight:700}.likebtn[disabled]{background:#d6456918;opacity:1}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:24px;font-size:15px;z-index:30;opacity:0;transition:opacity .3s;pointer-events:none}.toast.on{opacity:1}
 @media(max-width:900px){.note{width:clamp(92px,26%,150px);font-size:12px}}
+.entry{min-height:100vh;background:var(--deep);color:#fff;display:grid;place-items:center;padding:24px 16px}
+.ecard{width:min(560px,100%);background:var(--bg);color:var(--ink);border-radius:22px;padding:clamp(20px,4vw,36px);box-shadow:0 20px 50px #0004}
+.entry h1{color:#fff;text-align:center;margin:0 0 6px}.entry .sub{color:#cfe6ec;text-align:center;margin:0 0 22px}
+.ecard label{display:block;font-weight:700;margin:16px 0 6px}.ecard .hint{font-weight:400;font-size:14px;color:var(--muted)}
+.ecard input[type=text]{width:100%;min-height:48px;border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--bg);font-size:17px}
+.mems{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.eerr{color:var(--red);font-weight:600;font-size:15px;min-height:1.4em;margin-top:12px}
+.ego{width:100%;min-height:54px;margin-top:8px;font-size:18px}
+.who{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:15px}
+.who span{background:#ffffff1f;border:1px solid #ffffff40;border-radius:20px;padding:4px 12px;white-space:nowrap}
+.who button{min-height:40px;border-radius:10px;border:1.5px solid #ffffff66;background:transparent;color:#fff;padding:4px 12px}
+.modal select{width:100%;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--bg);font-size:16px;color:var(--ink)}
+body.pre header.top,body.pre main{display:none}body:not(.pre) #entry{display:none}
+@media(max-width:600px){.mems{grid-template-columns:1fr}}
 @media(max-width:900px){.cols,.places,.summary,.main,.simtop{grid-template-columns:1fr}}
 @media(max-width:600px){table{font-size:13px}}
 </style>
 </head>
 <body>
+<section class="entry" id="entry"><div>
+  <h1>학교 주변 제설 계획 실험실</h1><p class="sub">시작하기 전에 우리 반과 모둠, 조원을 입력해요.</p>
+  <form class="ecard" id="entryForm" autocomplete="off">
+    <label for="eRoom">반 코드 <span class="hint">선생님이 알려준 코드를 그대로 (예: 3-2)</span></label>
+    <input type="text" id="eRoom" maxlength="20" placeholder="예: 3-2">
+    <label>모둠</label><div class="seg" id="eTeam"></div>
+    <label>조원 이름 <span class="hint">한 명 이상</span></label><div class="mems" id="eMems"></div>
+    <button type="button" class="btn" id="addMem" style="margin-top:8px">＋ 조원 추가</button>
+    <div class="eerr" id="eErr" role="alert"></div>
+    <button class="btn pri ego">시작하기 →</button>
+  </form></div></section>
 <header class="band top"><div class="wrap">
   <div class="tophead"><h1>학교 주변 제설 계획 실험실</h1>
-  <label class="team">모둠 <input id="team" placeholder="모둠 이름" maxlength="20"></label></div>
+  <div class="who" id="who"></div></div>
   <nav class="steps" id="steps" aria-label="활동 단계"></nav>
 </div></header>
 
@@ -192,7 +217,7 @@ pre.out{white-space:pre-wrap;background:var(--card);border:1px solid var(--line)
 </div></main>
 <div class="ov" id="ovNew" role="dialog" aria-modal="true" aria-labelledby="nTitle"><form class="modal" id="newForm">
   <h3 id="nTitle">새 포스트잇 붙이기</h3>
-  <div class="row2"><div><label for="nAuthor">이름</label><input type="text" id="nAuthor" maxlength="12" required></div><div><label for="nTeam">모둠</label><input type="text" id="nTeam" maxlength="20"></div></div>
+  <div class="row2"><div><label for="nAuthor">작성자</label><select id="nAuthor" required></select></div><div><label for="nTeam">모둠</label><input type="text" id="nTeam" maxlength="20" readonly></div></div>
   <label>장소</label><div class="seg" id="nZone"></div>
   <label>우리 모둠 최종 채택안 <span class="muted">(4단계에서 자동으로 가져와요)</span></label><div id="nPlan" class="dnote"></div>
   <label for="nContent">왜 이렇게 정했나요? (근거)</label><textarea id="nContent" maxlength="300" required placeholder="예: 산책길은 등굣길 지름길이라 사람이 많지만 녹지 옆이라…"></textarea>
@@ -224,11 +249,13 @@ const MAT={nacl:{name:'NaCl',limit:-9,price:190,cl:.607},cacl2:{name:'CaCl₂',l
 const AMT={low:{name:'적게',g:10},mid:{name:'보통',g:20},high:{name:'많이',g:30}};
 const SHADE={없음:0,조금:-1,많음:-2};
 const blankObs=()=>({slope:'',traffic:'',shade:'',green:'',memo:''});
-const fresh=()=>({team:'',step:1,f:{safe:[],env:[],eco:[]},obs:{gate:blankObs(),hill:blankObs(),walk:blankObs()},cfg:null,sel:'gate',
+const fresh=()=>({room:'',members:['','','',''],entered:false,team:'',step:1,f:{safe:[],env:[],eco:[]},obs:{gate:blankObs(),hill:blankObs(),walk:blankObs()},cfg:null,sel:'gate',
   pick:{gate:{m:'none',a:'mid'},hill:{m:'none',a:'mid'},walk:{m:'none',a:'mid'}},plans:[null,null,null],final:null});
 let st=fresh(),loading=false;
 try{const s=JSON.parse(localStorage.getItem('snowsite1')||'null');if(s&&s.f&&s.obs)st=Object.assign(fresh(),s)}catch(e){}
-while(st.plans.length<3)st.plans.push(null);if(st.step>5)st.step=5;
+while(st.plans.length<3)st.plans.push(null);if(!Array.isArray(st.members))st.members=['','','',''];
+const QP=new URLSearchParams(location.search),QROOM=(QP.get('반')||QP.get('room')||'').trim().slice(0,20);
+if(QROOM&&QROOM!==st.room){st.room=QROOM;st.entered=false}if(st.step>5)st.step=5;
 const store=()=>{try{localStorage.setItem('snowsite1',JSON.stringify(st))}catch(e){}};
 const won=n=>Math.round(n).toLocaleString('ko-KR')+'원';
 const obsDone=()=>PLACES.every(p=>OBS.every(([k])=>st.obs[p.id][k]));
@@ -260,7 +287,7 @@ function done(i){return i===1?CRIT.every(c=>st.f[c.id].length>0):i===2?st.step>2
 function renderNav(){
   $('steps').innerHTML=STEPS.map(([n,c],i)=>`<button data-go="${i+1}" ${st.step===i+1?'aria-current="step"':''} class="${done(i+1)?'done':''}"><small>${i+1}단계 · ${c}</small>${n}</button>`).join('');
   document.querySelectorAll('section.step').forEach((s,i)=>s.classList.toggle('on',i+1===st.step));
-  $('prev').disabled=st.step===1;$('next').disabled=st.step===5;$('team').value=st.team;
+  $('prev').disabled=st.step===1;$('next').disabled=st.step===5;renderWho();
 }
 
 /* ---------- 1. 기준 ---------- */
@@ -372,10 +399,10 @@ const TEACHER_EMAILS=['ssyyss1208@ewha.ac.kr'];   // 교사 Google 계정 이메
 const ZONES=[['정문','#e3b21a'],['언덕','#ec8a3a'],['산책길','#2f9e6a'],['종합','#3a78c2']];
 const zc=z=>(ZONES.find(x=>x[0]===z)||ZONES[3])[1];
 const B={inited:false,mode:'local',room:'',notes:[],filter:'all',uid:'',teacher:false,email:'',fb:null,unsub:null,active:null,pending:null,zone:'종합',liked:new Set()};
-try{B.room=localStorage.getItem('snowboard-room')||'';B.uid=localStorage.getItem('snowboard-uid')||'';B.liked=new Set(JSON.parse(localStorage.getItem('snowboard-liked')||'[]'))}catch(e){}
+try{B.uid=localStorage.getItem('snowboard-uid')||'';B.liked=new Set(JSON.parse(localStorage.getItem('snowboard-liked')||'[]'))}catch(e){}
 if(!B.uid){B.uid='local-'+Math.random().toString(36).slice(2,10);try{localStorage.setItem('snowboard-uid',B.uid)}catch(e){}}
 const saveLiked=()=>{try{localStorage.setItem('snowboard-liked',JSON.stringify([...B.liked]))}catch(e){}};
-const roomId=()=>(B.room||'demo').replace(/[^0-9A-Za-z가-힣_-]/g,'').slice(0,20)||'demo';
+const roomId=()=>(st.room||'demo').replace(/[^0-9A-Za-z가-힣_-]/g,'').slice(0,20)||'demo';
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2200)}
 function ago(ts){const d=(Date.now()-ts)/1000;return d<60?'방금':d<3600?Math.floor(d/60)+'분 전':d<86400?Math.floor(d/3600)+'시간 전':Math.floor(d/86400)+'일 전'}
 const canEdit=n=>B.teacher||n.uid===B.uid;
@@ -430,9 +457,9 @@ function renderBoard(){
   const el=$('board'),notes=B.notes.slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   const shown=notes.filter(n=>B.filter==='all'||n.zone===B.filter);
   const cnt=z=>notes.filter(n=>n.zone===z).length;
-  const status=B.mode==='live'?`<span class="live on">● 실시간 연결됨 · ${esc(roomId())}반 보드</span>`:B.mode==='connecting'?'<span class="live">연결 중…</span>':'<span class="live">연습 모드 · 이 기기에서만 보여요</span>';
+  const status=B.mode==='live'?`<span class="live on">● 실시간 연결됨 · ${esc(roomId())}반 · 우리 반 보드</span>`:B.mode==='connecting'?'<span class="live">연결 중…</span>':`<span class="live">${esc(roomId())}반 · 연습 모드 (이 기기에서만 보여요)</span>`;
   const teacherBtn=B.mode==='live'?(B.email?`<button class="btn" id="tOut">${B.teacher?'교사':'로그인'}: ${esc(B.email)} · 로그아웃</button>`:'<button class="btn" id="tIn">교사 로그인</button>'):'';
-  el.innerHTML=`<div class="bhead"><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><label class="room">반 코드 <input id="roomIn" value="${esc(B.room)}" placeholder="예: 3-2" maxlength="20"></label>${status}</div>
+  el.innerHTML=`<div class="bhead"><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">${status}</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px">${teacherBtn}<button class="btn pri" id="newNote">＋ 새 포스트잇 붙이기</button></div></div>
    <div class="filters" role="group" aria-label="장소별 보기"><button data-flt="all" aria-pressed="${B.filter==='all'}">전체 (${notes.length})</button>${ZONES.map(([z,c])=>`<button data-flt="${z}" aria-pressed="${B.filter===z}"><span class="dot" style="background:${c};margin-right:6px"></span>${z} (${cnt(z)})</button>`).join('')}</div>
    <div class="bgrid"><div class="bmap" id="bmap" aria-label="지도 보드. 빈 곳을 누르면 그 자리에 포스트잇을 붙여요."><svg viewBox="0 0 600 600" aria-hidden="true">${MAPBASE}<rect x="14" y="478" width="572" height="112" rx="14" fill="var(--bg)" fill-opacity=".55" stroke="#3a78c2" stroke-width="2.5" stroke-dasharray="9 7"/><text x="28" y="472" font-size="14" font-weight="700" fill="#3a78c2">종합 계획 칸 · 모둠의 전체 계획 포스트잇</text>${PLACES.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="26" fill="${zc(p.name)}" opacity=".85"/><text x="${p.x}" y="${p.y+5}" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">${p.name}</text>`).join('')}</svg>
@@ -444,7 +471,7 @@ function renderBoard(){
 }
 function openNew(coords){
   if(!finalPlan()){toast('4단계에서 최종 채택안을 먼저 골라 주세요.');go(4);return}
-  B.pending=coords||null;$('nAuthor').value=$('nAuthor').value||'';$('nTeam').value=$('nTeam').value||st.team||'';
+  B.pending=coords||null;const cur=$('nAuthor').value;$('nAuthor').innerHTML=mems().map(m=>`<option${m===cur?' selected':''}>${esc(m)}</option>`).join('');$('nTeam').value=st.team;
   renderZoneSeg();$('ovNew').classList.add('on');$('nAuthor').focus();
 }
 function renderZoneSeg(){$('nZone').innerHTML=ZONES.map(([z])=>`<button type="button" data-zone="${z}" aria-pressed="${B.zone===z}">${z==='종합'?'종합(전체 계획)':z}</button>`).join('');renderPreview()}
@@ -457,7 +484,7 @@ function renderNote(){
    <div style="display:flex;gap:10px;align-items:center;margin:10px 0"><button class="likebtn" id="likeBtn" ${liked?'disabled':''}>♥ ${liked?'좋아요 했어요':'좋아요'} ${+n.likes||0}</button><span class="muted">${ago(n.createdAt||Date.now())}</span></div>
    <h3 style="font-size:17px;margin:14px 0 4px">피드백 ${(n.comments||[]).length}개</h3>
    <div class="cmts">${(n.comments||[]).map(c=>`<div class="cmt"><b>${esc(c.author)}</b><span>${ago(c.at||Date.now())}</span><br>${esc(c.text)}</div>`).join('')||'<div class="muted">아직 피드백이 없어요.</div>'}</div>
-   <form id="cForm"><div class="row2"><div><label for="cAuthor">이름</label><input type="text" id="cAuthor" maxlength="12" required value="${esc($('nAuthor').value)}"></div><div></div></div>
+   <form id="cForm"><div class="row2"><div><label for="cAuthor">이름</label><input type="text" id="cAuthor" maxlength="12" required value="${esc($('nAuthor').value||mems()[0]||'')}"></div><div></div></div>
    <label for="cText">피드백</label><textarea id="cText" maxlength="200" required placeholder="잘한 점이나 보완할 점을 근거와 함께 적어요."></textarea>
    <div class="mact">${canEdit(n)?'<button type="button" class="btn" id="delNote" style="border-color:var(--red);color:var(--red)">삭제</button>':'<span></span>'}<span><button type="button" class="btn" data-close>닫기</button> <button class="btn pri">피드백 남기기</button></span></div></form>`;
   $('ovNote').classList.add('on');
@@ -480,7 +507,20 @@ document.addEventListener('pointermove',e=>{if(!drag||!drag.can)return;const dx=
 document.addEventListener('pointerup',()=>{if(!drag)return;const d=drag;drag=null;
   if(d.moved){d.el.classList.remove('dragging');op('move',d.n.id,+d.x.toFixed(1),+d.y.toFixed(1));d.n.x=d.x;d.n.y=d.y;d.el.dataset.dragged='1';setTimeout(()=>delete d.el.dataset.dragged,50)}});
 
+const TEAMS=['1모둠','2모둠','3모둠','4모둠','5모둠','6모둠','7모둠','8모둠'];
+const mems=()=>st.members.map(m=>m.trim()).filter(Boolean);
+function renderEntry(){
+  $('eRoom').value=st.room;
+  $('eTeam').innerHTML=TEAMS.map(t=>`<button type="button" data-eteam="${t}" aria-pressed="${st.team===t}">${t.replace('모둠','')}</button>`).join('');
+  $('eMems').innerHTML=st.members.map((m,i)=>`<input type="text" data-mem="${i}" maxlength="12" placeholder="조원 ${i+1}" value="${esc(m)}" aria-label="조원 ${i+1} 이름">`).join('');
+  $('addMem').hidden=st.members.length>=6;
+}
+function renderWho(){
+  $('who').innerHTML=`<span>${esc(st.room)}반</span><span>${esc(st.team)}</span><span>${mems().map(esc).join(', ')}</span><button type="button" id="changeWho">반·모둠 변경</button>`;
+}
 function render(){
+  document.body.classList.toggle('pre',!st.entered);
+  if(!st.entered){renderEntry();store();return}
   renderNav();
   if(st.step===1)renderCrit();if(st.step===2)renderKeys();if(st.step===3)renderPlaces();if(st.step===4)renderSim();if(st.step===5)initBoard();
   store();
@@ -488,10 +528,13 @@ function render(){
 const go=n=>{st.step=clamp(n,1,5);render();try{window.scrollTo({top:0,behavior:'smooth'})}catch(e){}};
 
 document.addEventListener('submit',e=>{
+  if(e.target.id==='entryForm'){e.preventDefault();st.room=$('eRoom').value.trim().replace(/\s+/g,'');
+    const err=!st.room?'반 코드를 입력해 주세요.':!st.team?'모둠을 골라 주세요.':!mems().length?'조원 이름을 한 명 이상 적어 주세요.':'';
+    $('eErr').textContent=err;if(err)return;st.entered=true;if(B.inited&&B.mode==='live')LIVE.load();else if(B.inited)LOCAL.load();go(st.step||1);return}
   if(e.target.id==='newForm'){e.preventDefault();const author=$('nAuthor').value.trim(),content=$('nContent').value.trim(),fp=finalPlan();if(!author||!content||!fp)return;
     const base={정문:{x:40,y:50},언덕:{x:66,y:20},산책길:{x:4,y:28}}[B.zone];
     const c=B.zone==='종합'?stripSlot():(B.pending&&!inStrip(B.pending.y)?B.pending:{x:clamp(base.x+(Math.random()-.5)*14,0,82),y:clamp(base.y+(Math.random()-.5)*12,0,62)});
-    const n={uid:B.uid,author:author.slice(0,12),team:$('nTeam').value.trim().slice(0,20),zone:B.zone,planNo:fp.no,plan:fp.places,cost:fp.cost,cl:fp.cl,
+    const n={uid:B.uid,author:author.slice(0,12),team:st.team.slice(0,20),zone:B.zone,planNo:fp.no,plan:fp.places,cost:fp.cost,cl:fp.cl,
       content:content.slice(0,300),x:+c.x.toFixed(1),y:+c.y.toFixed(1),rot:+(Math.random()*6-3).toFixed(1),likes:0,comments:[],createdAt:Date.now()};
     op('add',n);$('nContent').value='';closeOv();if(B.filter!=='all'&&B.filter!==n.zone)B.filter='all';toast(B.mode==='live'?'모든 학생의 보드에 붙었어요!':'포스트잇을 붙였어요.');return}
   if(e.target.id==='cForm'){e.preventDefault();const a=$('cAuthor').value.trim(),t=$('cText').value.trim();if(!a||!t)return;
@@ -500,6 +543,9 @@ document.addEventListener('submit',e=>{
 document.addEventListener('submit',e=>{const f=e.target.closest('[data-crit]');if(!f)return;e.preventDefault();const i=f.querySelector('input'),v=i.value.trim();
   if(v){st.f[f.dataset.crit].push(v.slice(0,40));renderCrit();renderNav();store();document.querySelector(`[data-crit="${f.dataset.crit}"] input`).focus()}});
 document.addEventListener('click',e=>{
+  if(!st.entered){const tb=e.target.closest('[data-eteam]');if(tb){st.team=tb.dataset.eteam;renderEntry();store();return}
+    if(e.target.closest('#addMem')){st.members.push('');renderEntry();store();const l=document.querySelectorAll('[data-mem]');l[l.length-1].focus();return}return}
+  if(e.target.closest('#changeWho')){st.entered=false;render();try{window.scrollTo(0,0)}catch(e){}return}
   if(st.step===5){
     if(e.target.closest('[data-close]')||e.target.classList.contains('ov')){closeOv();return}
     const nb=e.target.closest('[data-note]');if(nb){if(nb.dataset.dragged)return;B.active=nb.dataset.note;renderNote();return}
@@ -528,8 +574,8 @@ document.addEventListener('click',e=>{
   else if(b.id==='reset'){if(b.dataset.sure){st=fresh();render()}else{b.dataset.sure=1;b.textContent='정말 지울까요? 한 번 더 누르기';setTimeout(()=>{delete b.dataset.sure;b.textContent='처음부터 다시'},3000)}}
 });
 document.addEventListener('input',e=>{const t=e.target;
-  if(t.id==='roomIn'){clearTimeout(t._t);t._t=setTimeout(()=>{B.room=t.value.trim();try{localStorage.setItem('snowboard-room',B.room)}catch(e){}store6().load();setTimeout(()=>{const i=$('roomIn');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},0)},600);return}
-  if(t.id==='team'){st.team=t.value;store()}
+  if(t.dataset.mem!=null){st.members[+t.dataset.mem]=t.value.slice(0,12);store()}
+  if(t.id==='eRoom'){st.room=t.value.trim();store()}
   else if(t.dataset.memo){st.obs[t.dataset.memo].memo=t.value;store()}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeOv();return}const nk=e.target.closest&&e.target.closest('.note[data-note]');if(nk&&(e.key==='Enter'||e.key===' ')){e.preventDefault();B.active=nk.dataset.note;renderNote();return}const s=e.target.closest&&e.target.closest('.spot');if(s&&(e.key==='Enter'||e.key===' ')){e.preventDefault();st.sel=s.dataset.sel;render()}});
 render();

@@ -160,6 +160,25 @@ pre.out{white-space:pre-wrap;background:var(--card);border:1px solid var(--line)
 .modal select{width:100%;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--bg);font-size:16px;color:var(--ink)}
 body.pre header.top,body.pre main{display:none}body:not(.pre) #entry{display:none}
 @media(max-width:600px){.mems{grid-template-columns:1fr}}
+.vc{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start;margin-top:8px}
+.chatbox,.specbox{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:14px 16px}
+.chead{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center}.chatbox h3,.specbox h3{font-size:18px;margin:0}
+.chatlog{display:grid;gap:8px;max-height:380px;min-height:160px;overflow:auto;margin:12px 0;padding:4px}
+.msg{display:flex}.msg.me{justify-content:flex-end}
+.bub{max-width:85%;border-radius:14px;padding:8px 12px;font-size:15px;background:var(--bg);border:1px solid var(--line)}
+.msg.me .bub{background:var(--deep);color:#fff;border-color:var(--deep)}
+.diff{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
+.vcform{display:flex;gap:8px;align-items:stretch}.vcform textarea{min-height:64px;flex:1}.vcform .btn{flex:none}
+.tips{margin-top:10px;padding:8px 12px}.tips ul{font-size:14px}
+.spec{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.spec li{display:grid;grid-template-columns:8.5em minmax(0,1fr);gap:8px;font-size:14px;padding:6px 10px;border-radius:10px;background:var(--bg);border:1px dashed var(--line);color:var(--muted)}
+.spec li.on{border-style:solid;border-color:var(--deep);color:var(--ink)}.spec li b{font-weight:600}
+.checks{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:6px}
+.checks li{border-radius:10px;padding:8px 10px;font-size:14px}.checks li span{display:block;font-size:13px;margin-top:2px}
+.checks li.ok{background:#2f9e6a1a;color:var(--ok)}.checks li.no{background:#d645451a;color:var(--red)}
+.okbox{margin-top:24px;border-radius:12px;padding:12px 16px;background:#2f9e6a1a;color:var(--ok);font-weight:700}
+.lockbox{margin-top:24px;border-radius:12px;padding:12px 16px;border:1.5px dashed var(--line);color:var(--muted);font-weight:600}
+@media(max-width:900px){.vc{grid-template-columns:1fr}}
 @media(max-width:900px){.cols,.places,.summary,.main,.simtop{grid-template-columns:1fr}}
 @media(max-width:600px){table{font-size:13px}}
 </style>
@@ -230,7 +249,7 @@ body.pre header.top,body.pre main{display:none}body:not(.pre) #entry{display:non
 {
 const $=id=>document.getElementById(id);
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const STEPS=[['기준 세우기','2차시'],['핵심 요소','2차시'],['장소 관찰','2차시'],['시뮬레이터·채택안','2·3차시'],['공유 보드','3차시']];
+const STEPS=[['기준 세우기','2차시'],['핵심 요소','2차시'],['장소 관찰','2차시'],['시뮬레이터 만들기','2차시'],['공유 보드','3차시']];
 const CRIT=[{id:'safe',name:'안전성',c:'var(--safe)',q:'사람들이 안전하게 다니려면?'},{id:'env',name:'환경성',c:'var(--env)',q:'주변 환경에 주는 영향은?'},{id:'eco',name:'경제성',c:'var(--eco)',q:'비용과 자원은?'}];
 const KEYS=[
   {name:'경사',crit:['safe'],kw:['경사','언덕','비탈','기울','오르막','내리막']},
@@ -250,10 +269,10 @@ const AMT={low:{name:'적게',g:10},mid:{name:'보통',g:20},high:{name:'많이'
 const SHADE={없음:0,조금:-1,많음:-2};
 const blankObs=()=>({slope:'',traffic:'',shade:'',green:'',memo:''});
 const fresh=()=>({room:'',members:['','','',''],entered:false,team:'',step:1,f:{safe:[],env:[],eco:[]},obs:{gate:blankObs(),hill:blankObs(),walk:blankObs()},cfg:null,sel:'gate',
-  pick:{gate:{m:'none',a:'mid'},hill:{m:'none',a:'mid'},walk:{m:'none',a:'mid'}},plans:[null,null,null],final:null});
+  pick:{gate:{m:'none',a:'mid'},hill:{m:'none',a:'mid'},walk:{m:'none',a:'mid'}},plans:[null,null,null],final:null,chat:[],spec:null,verified:false,check:null,vcBusy:false});
 let st=fresh(),loading=false;
 try{const s=JSON.parse(localStorage.getItem('snowsite1')||'null');if(s&&s.f&&s.obs)st=Object.assign(fresh(),s)}catch(e){}
-while(st.plans.length<3)st.plans.push(null);if(!Array.isArray(st.members))st.members=['','','',''];
+while(st.plans.length<3)st.plans.push(null);st.vcBusy=false;if(!Array.isArray(st.chat))st.chat=[];if(st.cfg&&!st.cfg.spec){st.cfg=null;st.verified=false}if(!Array.isArray(st.members))st.members=['','','',''];
 const QP=new URLSearchParams(location.search),QROOM=(QP.get('반')||QP.get('room')||'').trim().slice(0,20);
 if(QROOM&&QROOM!==st.room){st.room=QROOM;st.entered=false}if(st.step>5)st.step=5;
 const store=()=>{try{localStorage.setItem('snowsite1',JSON.stringify(st))}catch(e){}};
@@ -283,9 +302,9 @@ const ART={
 };
 
 /* ---------- 단계 탭 ---------- */
-function done(i){return i===1?CRIT.every(c=>st.f[c.id].length>0):i===2?st.step>2:i===3?obsDone():i===4?!!st.cfg&&st.final!=null:false}
+function done(i){return i===1?CRIT.every(c=>st.f[c.id].length>0):i===2?st.step>2:i===3?obsDone():i===4?!!st.verified&&st.final!=null:false}
 function renderNav(){
-  $('steps').innerHTML=STEPS.map(([n,c],i)=>`<button data-go="${i+1}" ${st.step===i+1?'aria-current="step"':''} class="${done(i+1)?'done':''}"><small>${i+1}단계 · ${c}</small>${n}</button>`).join('');
+  $('steps').innerHTML=STEPS.map(([n,c],i)=>`<button data-go="${i+1}" ${st.step===i+1?'aria-current="step"':''} class="${done(i+1)?'done':''}"><small>${i+1}단계 · ${c}</small>${i===4&&!st.verified?'🔒 ':''}${n}</button>`).join('');
   document.querySelectorAll('section.step').forEach((s,i)=>s.classList.toggle('on',i+1===st.step));
   $('prev').disabled=st.step===1;$('next').disabled=st.step===5;renderWho();
 }
@@ -313,24 +332,31 @@ function renderPlaces(){
     ${OBS.map(([k,n,opts])=>`<div class="q"><span>${n}</span>${seg(`data-obs="${p.id}:${k}"`,opts.map(v=>[v,v]),o[k])}</div>`).join('')}
     <div class="q"><span>이 장소의 특징은 제설제 사용과 어떤 관련이 있을까?</span><textarea data-memo="${p.id}" placeholder="예: 그늘이 많아 노면이 더 차가우니…">${esc(o.memo)}</textarea></div></div></article>`}).join('');
 }
-/* ---------- 4. 시뮬레이터 ---------- */
+/* ---------- 4. 시뮬레이터 (바이브코딩) ---------- */
 const STOPS=[[0,[214,69,69]],[.35,[236,125,44]],[.65,[227,178,26]],[1,[47,158,106]]];
 function mix(t){for(let i=1;i<STOPS.length;i++){const[a,ca]=STOPS[i-1],[b,cb]=STOPS[i];if(t<=b){const k=(t-a)/(b-a);return `rgb(${ca.map((v,j)=>Math.round(v+(cb[j]-v)*k)).join(',')})`}}return 'rgb(47,158,106)'}
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-function evaluate(p,c){
-  const m=MAT[c.m],g=c.m==='none'?0:AMT[c.a].g,temp=W.temp+SHADE[p.shade],mass=p.area*g/1000,cost=mass*m.price,cl=mass*m.cl;
+const FULL_SPEC={places:['gate','hill','walk'],materials:['nacl','cacl2','sand','none'],amounts:['low','mid','high'],useShade:true,useSnow:true,useGreen:true,show:['melt','cost','chloride','budget']};
+const EMPTY_SPEC={places:[],materials:[],amounts:[],useShade:false,useSnow:false,useGreen:false,show:[]};
+const SHOWS={melt:'녹은 정도',cost:'재료비',chloride:'염화 이온량',budget:'예산 막대'};
+function evaluate(p,c,S){
+  S=S||FULL_SPEC;
+  const a=S.amounts.length?c.a:'mid',m=MAT[c.m],g=c.m==='none'?0:AMT[a].g,temp=W.temp+(S.useShade?SHADE[p.shade]:0),mass=p.area*g/1000,cost=mass*m.price,cl=mass*m.cl;
   let melt=0,label,why,col,fill,sh;
   if(c.m==='none')why='아무것도 뿌리지 않았어요.';
   else if(c.m==='sand'){label='모래만 뿌림 · 얼음은 그대로';sh='모래만 뿌림';why='모래는 얼음을 녹이지 않고 표면 마찰을 높여요.';col='#b08850';fill='url(#sandDots)'}
   else{const power=clamp((temp-m.limit)/(Math.abs(m.limit)*.2),0,1);
-    melt=power===0?Math.max(0,g-10)/100:clamp(g*power/NEED,0,1);
-    why=(power===0?`노면 ${temp}℃가 ${m.name}의 작용 한계(약 ${m.limit}℃) 이하라 아주 약하게만 작용해요.`:power<1?`노면 ${temp}℃가 ${m.name}의 작용 한계(약 ${m.limit}℃)에 가까워 효과가 ${Math.round(power*100)}%로 떨어져요.`:`노면 ${temp}℃에서 ${m.name}가 충분히 작용해요.`)+` 필요한 양 ${NEED}g/㎡ 중 ${g}g/㎡를 뿌렸어요.`}
+    melt=S.useSnow?(power===0?Math.max(0,g-10)/100:clamp(g*power/NEED,0,1)):power;
+    why=(power===0?`노면 ${temp}℃가 ${m.name}의 작용 한계(약 ${m.limit}℃) 이하라 ${S.useSnow?'아주 약하게만':'거의'} 작용해요.`:power<1?`노면 ${temp}℃가 ${m.name}의 작용 한계(약 ${m.limit}℃)에 가까워 효과가 ${Math.round(power*100)}%로 떨어져요.`:`노면 ${temp}℃에서 ${m.name}가 충분히 작용해요.`)+(S.useSnow?` 필요한 양 ${NEED}g/㎡ 중 ${g}g/㎡를 뿌렸어요.`:'')}
   if(!col){col=mix(melt);fill=col;label=(melt<.25?'얼어 있음':melt<.5?'조금 녹음':melt<.8?'덜 녹음':'녹음')+(c.m!=='none'?` (${Math.round(melt*100)}%)`:'')}
-  const env=m.cl>0&&p.green==='있음'?'⚠ 녹지 옆에서 염화물 제설제 사용':c.m==='sand'?'배수로에 모래가 쌓일 수 있어 청소 필요':'';
-  return {p,c,melt,label,why,env,temp,cost,cl,col,fill,pct:c.m==='sand'?'모래':Math.round(melt*100)+'%',sh:sh||label.replace(/ \(.*\)/,'')};
+  const showMelt=S.show.includes('melt');
+  if(!showMelt&&c.m!=='sand'){col='#8a9aa3';fill=col;label='녹은 정도를 보여주지 않음';why='설계도에 녹은 정도 표시가 없어요.'}
+  const env=S.useGreen&&m.cl>0&&p.green==='있음'?'⚠ 녹지 옆에서 염화물 제설제 사용':c.m==='sand'?'배수로에 모래가 쌓일 수 있어 청소 필요':'';
+  return {p,c:{m:c.m,a},melt,label,why,env,temp,cost,cl,col,fill,pct:c.m==='sand'?'모래':showMelt?Math.round(melt*100)+'%':'?',sh:sh||label.replace(/ \(.*\)/,'')};
 }
-const places=cfg=>PLACES.map(p=>Object.assign({},p,cfg[p.id],{memo:st.obs[p.id].memo}));
-function calc(pick,cfg){const r=places(cfg).map(p=>evaluate(p,pick[p.id]));return {r,cost:r.reduce((a,x)=>a+x.cost,0),cl:r.reduce((a,x)=>a+x.cl,0)}}
+const curCfg=()=>{const c={};PLACES.forEach(p=>{const o=st.obs[p.id];c[p.id]={slope:o.slope,traffic:o.traffic,shade:o.shade,green:o.green}});return c};
+const places=(cfg,S)=>PLACES.filter(p=>(S||FULL_SPEC).places.includes(p.id)).map(p=>Object.assign({},p,cfg[p.id],{memo:st.obs[p.id].memo}));
+function calc(pick,cfg,S){S=S||cfg.spec||st.spec||FULL_SPEC;const r=places(cfg,S).map(p=>evaluate(p,pick[p.id],S));return {r,S,cost:r.reduce((a,x)=>a+x.cost,0),cl:r.reduce((a,x)=>a+x.cl,0)}}
 const choice=x=>x.c.m==='none'?'무처리':`${MAT[x.c.m].name} ${AMT[x.c.a].name}`;
 const MAPBASE=`<defs><pattern id="sandDots" width="7" height="7" patternUnits="userSpaceOnUse"><rect width="7" height="7" fill="#b08850"/><circle cx="2" cy="2" r="1.1" fill="#6e5228"/><circle cx="5.5" cy="5.5" r=".9" fill="#6e5228"/></pattern></defs>
  <g stroke="var(--road)" stroke-width="2" stroke-dasharray="5 5" fill="none"><circle cx="515" cy="165" r="44"/><circle cx="515" cy="165" r="60"/><circle cx="515" cy="165" r="76"/></g>
@@ -342,41 +368,147 @@ const MAPBASE=`<defs><pattern id="sandDots" width="7" height="7" patternUnits="u
  <text x="300" y="265" text-anchor="middle" font-size="14" font-weight="600" fill="var(--ink)">운동장</text>`;
 function treesFor(cfg){let t='';const pos={gate:[[360,440],[250,440]],hill:[[580,250],[450,90]],walk:[[30,180],[70,150],[130,170],[40,230]]};
   PLACES.forEach(p=>{if(cfg[p.id].green==='있음')pos[p.id].forEach(([x,y])=>t+=`<g transform="translate(${x},${y})"><circle r="11" fill="var(--tree)"/></g>`)});return t}
+/* ---- 바이브코딩: 설계도 ---- */
+const SPEC_KEYS={places:['gate','hill','walk'],materials:['nacl','cacl2','sand','none'],amounts:['low','mid','high'],show:['melt','cost','chloride','budget']};
+function sanitize(o,prev){const s=JSON.parse(JSON.stringify(prev||EMPTY_SPEC));if(!o||typeof o!=='object')return s;
+  for(const k of Object.keys(SPEC_KEYS))if(Array.isArray(o[k]))s[k]=SPEC_KEYS[k].filter(v=>o[k].includes(v));
+  for(const k of ['useShade','useSnow','useGreen'])if(typeof o[k]==='boolean')s[k]=o[k];return s}
+function specItems(S){S=S||EMPTY_SPEC;return [
+  ['장소',S.places.length?S.places.map(id=>PLACES.find(p=>p.id===id).name).join(', '):'없음',S.places.length>0],
+  ['제설제',S.materials.length?S.materials.map(k=>MAT[k].name).join(', '):'없음',S.materials.length>0],
+  ['사용량 선택',S.amounts.length?S.amounts.map(k=>AMT[k].name).join(', '):'없음 (보통으로 고정)',S.amounts.length>0],
+  ['그늘 → 노면 온도',S.useShade?'반영':'반영 안 함',S.useShade],
+  ['눈의 양 → 필요한 양',S.useSnow?'반영':'반영 안 함',S.useSnow],
+  ['녹지 옆 염화물 경고',S.useGreen?'켬':'끔',S.useGreen],
+  ['보여줄 결과',S.show.length?S.show.map(k=>SHOWS[k]).join(', '):'없음',S.show.length>0]]}
+function specDiff(a,b){a=a||EMPTY_SPEC;const out=[];const A=specItems(a),Bi=specItems(b);A.forEach((x,i)=>{if(x[1]!==Bi[i][1])out.push(`${Bi[i][0]}: ${Bi[i][1]}`)});return out}
+/* AI가 연결되지 않을 때 쓰는 규칙 읽기 (예비 경로) */
+function ruleParse(t,prev){const s=JSON.parse(JSON.stringify(prev||EMPTY_SPEC)),off=/빼|없애|지워|제거|필요\s*없/.test(t);
+  const set=(arr,v,on)=>{const i=arr.indexOf(v);if(on&&i<0)arr.push(v);if(!on&&i>=0)arr.splice(i,1)};
+  const has=re=>re.test(t);
+  if(has(/세\s*(곳|장소|군데)|모든\s*장소|전부|다\s*넣/))['gate','hill','walk'].forEach(v=>set(s.places,v,!off));
+  if(has(/정문/))set(s.places,'gate',!off);if(has(/언덕/))set(s.places,'hill',!off);if(has(/산책/))set(s.places,'walk',!off);
+  if(has(/nacl|염화\s*나트륨|소금/i))set(s.materials,'nacl',!off);if(has(/cacl|염화\s*칼슘/i))set(s.materials,'cacl2',!off);if(has(/모래/))set(s.materials,'sand',!off);if(has(/무처리|아무것도|안\s*뿌/))set(s.materials,'none',!off);
+  if(has(/사용량|양을?\s*(바꾸|고르|조절|선택)|적게|많이/))['low','mid','high'].forEach(v=>set(s.amounts,v,!off));
+  if(has(/그늘/))s.useShade=!off;if(has(/눈의?\s*양|적설|눈이\s*(많|쌓)/))s.useSnow=!off;if(has(/녹지|나무|식물|경고/))s.useGreen=!off;
+  if(has(/녹(는|은|았|을)|녹는\s*정도|얼마나\s*녹/))set(s.show,'melt',!off);if(has(/비용|가격|돈|재료비/))set(s.show,'cost',!off);if(has(/예산/))set(s.show,'budget',!off);if(has(/염화\s*이온|염화물|환경\s*(부담|영향)/))set(s.show,'chloride',!off);
+  return s}
+/* ---- AI 연결 (Firebase AI Logic · Gemini) ---- */
+const AI_MODELS=['gemini-3.5-flash','gemini-3.5-flash-lite'];  // 무료 등급에서 쓸 수 있는 모델 (앞의 것이 막히면 다음 것으로)
+const AI_SYS=`너는 고등학생이 '학교 주변 제설 시뮬레이터'를 말로 설계하도록 돕는 코딩 도우미야. 학생의 요청을 읽고 시뮬레이터 설계도를 JSON으로만 돌려줘.
+설계도 형식: {"places":[...],"materials":[...],"amounts":[...],"useShade":true/false,"useSnow":true/false,"useGreen":true/false,"show":[...],"reply":"..."}
+- places: "gate"(정문), "hill"(언덕), "walk"(산책길) 중 고른 장소
+- materials: "nacl"(염화나트륨), "cacl2"(염화칼슘), "sand"(모래), "none"(무처리) 중 비교할 제설제
+- amounts: "low","mid","high" 중 학생이 고를 수 있는 사용량. 사용량을 바꾸는 기능을 요청하지 않았으면 빈 배열
+- useShade: 그늘진 곳의 노면 온도가 더 낮게 반영되는가
+- useSnow: 눈의 양에 따라 필요한 제설제 양이 달라지는가
+- useGreen: 녹지 옆에서 염화물 제설제를 쓰면 경고하는가
+- show: "melt"(녹은 정도), "cost"(재료비), "chloride"(염화 이온량), "budget"(예산 막대) 중 화면에 보여줄 결과
+- reply: 학생에게 하는 말. 한국어, 존댓말, 2문장 이내. 이번에 무엇을 바꿨는지만 말해.
+규칙:
+1. "현재 설계도"에 학생의 "이번 요청"을 반영한 전체 설계도를 돌려줘. 학생이 빼 달라고 하면 빼.
+2. 학생이 말하지 않은 기능은 절대 스스로 켜지 마. 빠진 기능이 있어도 알려주지 마. 학생이 검증 단계에서 스스로 찾아야 해.
+3. 온도, 단가, 작용 한계 같은 숫자는 정하지 마. 사이트가 정해진 값을 써.
+4. 제설 시뮬레이터와 관계없거나 부적절한 요청이면 현재 설계도를 그대로 두고 reply로 정중히 안내해.`;
+let AIM=null,AIState='idle';
+async function fbReady(){
+  if(B.fb)return B.fb;if(!FB_CONFIG)throw new Error('no config');
+  if(!fbReady.p)fbReady.p=(async()=>{const V='12.19.0',base=`https://www.gstatic.com/firebasejs/${V}/`;
+    const [app,auth,fs]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
+    const a=app.initializeApp(FB_CONFIG),au=auth.getAuth(a),db=fs.getFirestore(a);B.fb={app:a,auth,au,fs,db,base};return B.fb})();
+  return fbReady.p}
+async function askAI(text){
+  const f=await fbReady();
+  if(!AIM){const ai=await import(f.base+'firebase-ai.js');const inst=ai.getAI(f.app,{backend:new ai.GoogleAIBackend()});AIM={ai,inst,i:0}}
+  const hist=st.chat.slice(-6).map(m=>`${m.who==='me'?'학생':'도우미'}: ${m.text}`).join('\n');
+  const prompt=JSON.stringify({현재설계도:st.spec||EMPTY_SPEC,최근대화:hist,이번요청:text});
+  let lastErr;
+  for(;AIM.i<AI_MODELS.length;AIM.i++){
+    try{const model=AIM.ai.getGenerativeModel(AIM.inst,{model:AI_MODELS[AIM.i],systemInstruction:AI_SYS,generationConfig:{responseMimeType:'application/json',temperature:.2}});
+      const res=await model.generateContent(prompt);const o=JSON.parse(res.response.text());AIState='on';return o}
+    catch(e){lastErr=e;const msg=String(e&&e.message||e);if(!/not found|404|403|429|quota|exhausted|not supported|unsupported/i.test(msg))break}
+  }
+  if(AIM.i>=AI_MODELS.length)AIM.i=0;AIState='off';throw lastErr}
+async function sendVC(text){
+  text=text.trim().slice(0,400);if(!text||st.vcBusy)return;
+  st.chat.push({who:'me',text});st.vcBusy=true;renderSim();
+  const prev=st.spec;let spec,reply,viaAI=true;
+  try{const o=await askAI(text);spec=sanitize(o,prev);reply=typeof o.reply==='string'?o.reply.slice(0,300):'설계도를 고쳤어요.'}
+  catch(e){console.warn('AI 연결 실패, 규칙 읽기로 전환',e);viaAI=false;spec=ruleParse(text,prev);reply='AI 연결이 안 돼서, 사이트가 정해진 규칙으로 요청을 읽었어요.'}
+  const d=specDiff(prev,spec);
+  st.chat.push({who:'ai',text:reply,diff:d.length?d:['바뀐 기능 없음'],rule:!viaAI});
+  st.spec=spec;st.verified=false;st.check=null;st.vcBusy=false;render();
+  const log=document.querySelector('.chatlog');if(log)log.scrollTop=log.scrollHeight;
+}
+/* ---- 기준값 검증 ---- */
+function runCheck(){
+  const S=st.spec||EMPTY_SPEC,cfg=curCfg(),out=[];
+  const one=(id,pick,spec)=>{const R=calc({gate:pick,hill:pick,walk:pick},cfg,spec);return R.r.find(x=>x.p.id===id)};
+  out.push({name:'정문·언덕·산책길 세 장소가 모두 있어요',ok:S.places.length===3,hint:'시뮬레이터에 없는 장소가 있어요.'});
+  out.push({name:'NaCl·CaCl₂·모래를 골라 비교할 수 있어요',ok:['nacl','cacl2','sand'].every(k=>S.materials.includes(k)),hint:'비교할 수 없는 제설제가 있어요.'});
+  out.push({name:'사용량(적게·보통·많이)을 바꿀 수 있어요',ok:S.amounts.length===3,hint:'사용량을 바꿀 수 없어요.'});
+  const shaded=PLACES.find(p=>SHADE[cfg[p.id].shade]<0);
+  if(shaded){const ref=W.temp+SHADE[cfg[shaded.id].shade],mine=W.temp+(S.useShade?SHADE[cfg[shaded.id].shade]:0);
+    out.push({name:`그늘진 ${shaded.name}의 노면 온도가 관찰대로 낮아요`,ok:ref===mine,ref:`${ref}℃`,mine:S.places.includes(shaded.id)?`${mine}℃`:'장소 없음',hint:'우리 관찰(그늘)이 노면 온도에 반영되지 않았어요.'})}
+  else out.push({name:'그늘이 노면 온도에 반영돼요',ok:S.useShade,hint:'그늘과 노면 온도의 관계가 빠졌어요.'});
+  const r0=one('gate',{m:'nacl',a:'low'},FULL_SPEC),r1=S.places.includes('gate')&&S.materials.includes('nacl')?one('gate',{m:'nacl',a:S.amounts.includes('low')?'low':'mid'},S):null;
+  out.push({name:'눈의 양(5cm)에 따라 필요한 양이 달라져요 · 정문 NaCl 적게',ok:!!r1&&S.useSnow&&S.amounts.includes('low')&&Math.abs(r0.melt-r1.melt)<.01,ref:Math.round(r0.melt*100)+'%',mine:r1&&S.show.includes('melt')?Math.round(r1.melt*100)+'%':'확인 불가',hint:'뿌린 양이 결과에 제대로 반영되지 않아요.'});
+  out.push({name:'녹지 옆에서 염화물을 쓰면 경고가 떠요',ok:S.useGreen,hint:'환경 쪽 경고가 빠졌어요.'});
+  out.push({name:'녹은 정도·재료비·예산·염화 이온량이 화면에 보여요',ok:['melt','cost','budget','chloride'].every(k=>S.show.includes(k)),hint:'안전·경제·환경을 판단할 결과 중 빠진 것이 있어요.'});
+  st.check=out;st.verified=out.every(x=>x.ok);
+  if(st.verified){st.cfg=Object.assign(curCfg(),{spec:JSON.parse(JSON.stringify(S))});toast('검증 통과! 방안 비교와 3차시가 열렸어요.')}
+  render();
+}
 function renderSim(){
   const el=$('sim');
   if(!obsDone()){const miss=PLACES.filter(p=>OBS.some(([k])=>!st.obs[p.id][k])).map(p=>p.name);
     el.innerHTML=`<div class="warnbox">3단계에서 ${miss.join(', ')}의 관찰을 마저 골라야 시뮬레이터를 만들 수 있어요.</div><button class="btn pri" data-go="3">3단계로 가기</button>`;return}
-  if(loading){el.innerHTML=`<div class="loader">우리 모둠의 관찰 값을 읽어 시뮬레이터를 만드는 중…<i></i></div>`;return}
-  const cur={};PLACES.forEach(p=>{const o=st.obs[p.id];cur[p.id]={slope:o.slope,traffic:o.traffic,shade:o.shade,green:o.green}});
-  const sum=`<div class="summary">${PLACES.map(p=>{const o=st.obs[p.id];return `<div class="sumc"><b>${p.name}</b><br>경사 ${o.slope} · 통행 ${o.traffic} · 그늘 ${o.shade} · 녹지 ${o.green}<br><span style="color:var(--muted);font-size:14px">→ 노면 ${W.temp+SHADE[o.shade]}℃${o.green==='있음'?' · 녹지 경고 대상':''}</span></div>`}).join('')}</div>`;
-  if(!st.cfg){el.innerHTML=sum+`<button class="btn pri" id="build" style="font-size:18px;padding:12px 24px">▶ 시뮬레이터 만들기</button>`;return}
-  const changed=JSON.stringify(cur)!==JSON.stringify(st.cfg);
-  const R=calc(st.pick,st.cfg),over=R.cost>BUDGET;
-  el.innerHTML=(changed?`<div class="warnbox">3단계 관찰 내용이 바뀌었어요. <button class="btn" id="build">바뀐 값으로 다시 만들기</button></div>`:'')+
-  `<div class="simtop"><div><div class="mission">${esc(st.team||'우리')} 모둠 · 예산 20,000원으로 정문·언덕·산책길을 어떻게 관리할까요?</div><div class="fc"><span>내일 아침 예보</span><span>노면 −8℃</span><span>눈 5cm</span></div></div>
-   <div class="budget"><div class="lab"><span>사용한 재료비</span><b>${won(R.cost)} / ${won(BUDGET)}</b></div><div class="bar ${over?'over':''}"><span style="width:${Math.min(100,R.cost/BUDGET*100)}%"></span></div><div class="msg">${over?`예산을 ${won(R.cost-BUDGET)} 넘었어요.`:`남은 예산 ${won(BUDGET-R.cost)}`}</div></div></div>
-  <div class="main"><section class="map"><svg viewBox="0 0 600 470" role="img" aria-label="학교와 세 장소의 배치도">${MAPBASE}${treesFor(st.cfg)}${R.r.map(x=>{const p=x.p,sel=st.sel===p.id;
-     const facts=[`경사 ${p.slope}`,`통행 ${p.traffic}`,`녹지 ${p.green}`,`그늘 ${p.shade}${SHADE[p.shade]?`(노면 ${SHADE[p.shade]}℃)`:''}`];
-     return `<g class="spot" data-sel="${p.id}" tabindex="0" role="button" aria-label="${p.name} 선택">${sel?`<circle cx="${p.x}" cy="${p.y}" r="38" fill="none" stroke="var(--ink)" stroke-width="3"/>`:''}${SHADE[p.shade]?`<circle cx="${p.x}" cy="${p.y}" r="44" fill="#00000018"/>`:''}
-      <circle cx="${p.x}" cy="${p.y}" r="30" fill="${x.fill}" stroke="var(--bg)" stroke-width="4"/>
-      <text x="${p.x}" y="${p.y-2}" text-anchor="middle" font-size="${p.name.length>2?13:15}" font-weight="700" fill="#fff" stroke="#0006" stroke-width="2.5" paint-order="stroke">${p.name}</text>
-      <text x="${p.x}" y="${p.y+15}" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" stroke="#0006" stroke-width="2.5" paint-order="stroke">${x.pct}</text></g>
-      <g font-size="13" fill="var(--ink)"><text x="${p.lx}" y="${p.ly}" font-weight="700" fill="${x.col}">● ${x.sh}</text>${facts.map((f,i)=>`<text x="${p.lx}" y="${p.ly+18*(i+1)}">${f}</text>`).join('')}</g>`}).join('')}<g class="snowfx" id="snowfx"></g></svg>
-   <div class="legend"><span>녹은 정도</span><span class="grad">0%<b></b>100%</span><span><i style="background:#b08850"></i>모래만 뿌림</span><span>· 장소를 누르면 선택돼요</span></div></section>
-  <section class="panel"><div class="tabs" role="tablist">${R.r.map(x=>`<button role="tab" data-sel="${x.p.id}" aria-selected="${st.sel===x.p.id}"><span class="dot" style="background:${x.col}"></span>${x.p.name}</button>`).join('')}</div>
-   ${(()=>{const x=R.r.find(y=>y.p.id===st.sel);return `<div class="pbody"><h3>${x.p.name}</h3>${x.p.memo?`<div class="memo"><b>우리 모둠 메모</b>${esc(x.p.memo)}</div>`:''}
-    <div class="q"><span>제설제</span>${seg('data-k="m"',Object.entries(MAT).map(([k,v])=>[k,v.name]),x.c.m)}</div>
-    <div class="q"><span>사용량</span>${seg('data-k="a"',Object.entries(AMT).map(([k,v])=>[k,`${v.name} ${v.g}g/㎡`]),x.c.a,x.c.m==='none')}</div>
-    <div class="res" style="border-left-color:${x.col}" aria-live="polite"><span class="st">${x.label}</span><span class="sub">${x.why}</span><span class="sub">재료비 ${won(x.cost)}${x.cl>0?` · 염화 이온 ${x.cl.toFixed(1)}kg`:''}</span>${x.env?`<span class="env">${x.env}</span>`:''}</div></div>`})()}
-   <ul class="all">${R.r.map(y=>`<li><span class="dot" style="background:${y.col}"></span><b>${y.p.name}</b><span>${choice(y)}</span><span class="n">${won(y.cost)}</span></li>`).join('')}<li><span></span><b>합계</b><span>염화 이온 ${R.cl.toFixed(1)}kg</span><span class="n" style="font-weight:700">${won(R.cost)}</span></li></ul></section></div>
-  <div class="save"><button class="btn pri" data-slot="0">방안 1로 저장</button><button class="btn pri" data-slot="1">방안 2로 저장</button><button class="btn pri" data-slot="2">방안 3으로 저장</button><button class="btn" id="clearPlans">저장한 방안 지우기</button></div>
-  ${cmpTable()}
-  <details><summary>ⓘ 이 시뮬레이터가 알려주는 것과 알려주지 못하는 것</summary><ul>
-   <li><b>우리 모둠 관찰이 반영되는 곳:</b> 그늘(없음 0℃ · 조금 −1℃ · 많음 −2℃만큼 노면이 더 차가움), 녹지(염화물 사용 시 경고). 경사·통행량은 표시만 하고 계산에는 쓰지 않아요. 중요도는 여러분이 판단해요.</li>
-   <li><b>녹은 정도:</b> 온도별 효과 × (뿌린 양 ÷ 필요한 양). 노면 온도가 작용 한계에 가까울수록 효과가 낮아지고, 한계 이하에서는 아주 약하게만 작용해요(보통 10%, 많이 20%).</li>
-   <li><b>재료비·염화 이온:</b> 면적 × 사용량 × 단가, 제설제 질량 × 염화 이온 비율(NaCl 60.7%, CaCl₂ 63.9%). 인건비·장비비, 실제 유출량은 포함하지 않아요.</li>
+  if(st.verified&&st.cfg){const c=curCfg();if(PLACES.some(p=>JSON.stringify(c[p.id])!==JSON.stringify({slope:st.cfg[p.id].slope,traffic:st.cfg[p.id].traffic,shade:st.cfg[p.id].shade,green:st.cfg[p.id].green}))){st.verified=false;st.check=null}}
+  const S=st.spec;
+  const sum=`<div class="summary">${PLACES.map(p=>{const o=st.obs[p.id];return `<div class="sumc"><b>${p.name}</b> <span style="color:var(--muted);font-size:14px">(3단계 관찰)</span><br>경사 ${o.slope} · 통행 ${o.traffic} · 그늘 ${o.shade} · 녹지 ${o.green}</div>`}).join('')}</div>`;
+  const aiBadge=AIState==='on'?'<span class="live on">● AI 연결됨</span>':AIState==='off'?'<span class="live">AI 연결 안 됨 · 규칙 읽기 모드</span>':'<span class="live">AI 대기 중</span>';
+  const chat=`<section class="chatbox"><div class="chead"><h3>① AI에게 시뮬레이터 설명하기</h3>${aiBadge}</div>
+   <div class="chatlog" aria-live="polite">${st.chat.length?st.chat.map(m=>`<div class="msg ${m.who}"><div class="bub">${esc(m.text)}${m.diff?`<ul class="diff">${m.diff.map(d=>`<li>${esc(d)}</li>`).join('')}</ul>`:''}</div></div>`).join(''):`<div class="muted" style="padding:8px">아직 대화가 없어요. 우리가 만들고 싶은 시뮬레이터를 말로 설명해 보세요. 1~3단계에서 찾은 요소를 떠올리며, 무엇을 넣고, 무엇을 바꿔 보고, 무엇을 결과로 볼지 말해 주세요.</div>`}${st.vcBusy?'<div class="msg ai"><div class="bub">설계도를 만드는 중…</div></div>':''}</div>
+   <form id="vcForm" class="vcform"><textarea id="vcIn" maxlength="400" placeholder="예: 정문이랑 언덕에서 염화나트륨과 모래를 비교하는 시뮬레이터를 만들어 줘" ${st.vcBusy?'disabled':''}></textarea><button class="btn pri" ${st.vcBusy?'disabled':''}>보내기</button></form>
+   <details class="tips"><summary>어떻게 말하면 좋을까요?</summary><ul><li>무엇을 넣을지: 장소, 제설제, 사용량</li><li>어떤 관계가 있는지: "만약 ~라면 ~하게 해 줘"</li><li>무엇을 볼지: 결과로 보여줄 것</li><li>고칠 때: "○○가 이상해, ~하게 고쳐 줘", "○○는 빼 줘"</li></ul></details></section>`;
+  const specbox=`<section class="specbox"><h3>② 지금 설계도</h3><ul class="spec">${specItems(S).map(([k,v,on])=>`<li class="${on?'on':''}"><b>${k}</b><span>${esc(v)}</span></li>`).join('')}</ul>
+   <button class="btn pri" id="verify" ${S?'':'disabled'} style="width:100%;margin-top:10px">③ 기준값으로 검증하기</button>
+   ${st.check?`<ul class="checks">${st.check.map(c=>`<li class="${c.ok?'ok':'no'}"><b>${c.ok?'✓':'✗'} ${esc(c.name)}</b>${c.ref?`<span>기준 ${esc(c.ref)} · 우리 시뮬레이터 ${esc(c.mine)}</span>`:''}${c.ok?'':`<span>${esc(c.hint)}</span>`}</li>`).join('')}</ul>
+   <p class="note">${st.verified?'모두 통과했어요. 아래에서 방안을 비교해 보세요.':'✗ 항목을 AI에게 다시 설명해서 고친 뒤, 다시 검증하세요.'}</p>`:'<p class="note">교사가 정한 기준값과 우리 시뮬레이터의 결과를 비교해요. 모두 통과해야 3차시가 열려요.</p>'}</section>`;
+  let simHtml='';
+  if(S&&S.places.length){
+    const allowM=S.materials.length?S.materials:['none'];
+    PLACES.forEach(p=>{const k=st.pick[p.id];if(!allowM.includes(k.m))k.m=allowM[0];if(S.amounts.length&&!S.amounts.includes(k.a))k.a=S.amounts[0]});
+    if(!S.places.includes(st.sel))st.sel=S.places[0];
+    const cfg=curCfg(),R=calc(st.pick,cfg,S),over=R.cost>BUDGET,sc=k=>S.show.includes(k);
+    simHtml=`<h3 style="margin:28px 0 10px">우리 모둠이 만든 시뮬레이터</h3>
+    <div class="simtop"><div><div class="mission">${esc(st.team||'우리')} 모둠 · 예산 20,000원으로 정문·언덕·산책길을 어떻게 관리할까요?</div><div class="fc"><span>내일 아침 예보</span><span>노면 −8℃</span><span>눈 5cm</span></div></div>
+     ${sc('budget')?`<div class="budget"><div class="lab"><span>사용한 재료비</span><b>${won(R.cost)} / ${won(BUDGET)}</b></div><div class="bar ${over?'over':''}"><span style="width:${Math.min(100,R.cost/BUDGET*100)}%"></span></div><div class="msg">${over?`예산을 ${won(R.cost-BUDGET)} 넘었어요.`:`남은 예산 ${won(BUDGET-R.cost)}`}</div></div>`:'<div class="muted">예산 막대 없음</div>'}</div>
+    <div class="main"><section class="map"><svg viewBox="0 0 600 470" role="img" aria-label="학교와 장소 배치도">${MAPBASE}${treesFor(cfg)}${R.r.map(x=>{const p=x.p,sel=st.sel===p.id,dShade=S.useShade?SHADE[p.shade]:0;
+       const facts=[`경사 ${p.slope}`,`통행 ${p.traffic}`,`녹지 ${p.green}`,`그늘 ${p.shade}${dShade?`(노면 ${dShade}℃)`:''}`];
+       return `<g class="spot" data-sel="${p.id}" tabindex="0" role="button" aria-label="${p.name} 선택">${sel?`<circle cx="${p.x}" cy="${p.y}" r="38" fill="none" stroke="var(--ink)" stroke-width="3"/>`:''}${dShade?`<circle cx="${p.x}" cy="${p.y}" r="44" fill="#00000018"/>`:''}
+        <circle cx="${p.x}" cy="${p.y}" r="30" fill="${x.fill}" stroke="var(--bg)" stroke-width="4"/>
+        <text x="${p.x}" y="${p.y-2}" text-anchor="middle" font-size="${p.name.length>2?13:15}" font-weight="700" fill="#fff" stroke="#0006" stroke-width="2.5" paint-order="stroke">${p.name}</text>
+        <text x="${p.x}" y="${p.y+15}" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" stroke="#0006" stroke-width="2.5" paint-order="stroke">${x.pct}</text></g>
+        <g font-size="13" fill="var(--ink)"><text x="${p.lx}" y="${p.ly}" font-weight="700" fill="${x.col}">● ${x.sh}</text>${facts.map((f,i)=>`<text x="${p.lx}" y="${p.ly+18*(i+1)}">${f}</text>`).join('')}</g>`}).join('')}<g class="snowfx" id="snowfx"></g></svg>
+     <div class="legend">${sc('melt')?'<span>녹은 정도</span><span class="grad">0%<b></b>100%</span>':''}<span><i style="background:#b08850"></i>모래만 뿌림</span><span>· 장소를 누르면 선택돼요</span></div></section>
+    <section class="panel"><div class="tabs" role="tablist" style="grid-template-columns:repeat(${R.r.length},minmax(0,1fr))">${R.r.map(x=>`<button role="tab" data-sel="${x.p.id}" aria-selected="${st.sel===x.p.id}"><span class="dot" style="background:${x.col}"></span>${x.p.name}</button>`).join('')}</div>
+     ${(()=>{const x=R.r.find(y=>y.p.id===st.sel);return `<div class="pbody"><h3>${x.p.name}</h3>${x.p.memo?`<div class="memo"><b>우리 모둠 메모</b>${esc(x.p.memo)}</div>`:''}
+      <div class="q"><span>제설제</span>${seg('data-k="m"',allowM.map(k=>[k,MAT[k].name]),x.c.m)}</div>
+      ${S.amounts.length?`<div class="q"><span>사용량</span>${seg('data-k="a"',S.amounts.map(k=>[k,`${AMT[k].name} ${AMT[k].g}g/㎡`]),x.c.a,x.c.m==='none')}</div>`:''}
+      <div class="res" style="border-left-color:${x.col}" aria-live="polite"><span class="st">${x.label}</span><span class="sub">${x.why}</span>${sc('cost')||sc('chloride')?`<span class="sub">${sc('cost')?`재료비 ${won(x.cost)}`:''}${sc('chloride')&&x.cl>0?` · 염화 이온 ${x.cl.toFixed(1)}kg`:''}</span>`:''}${x.env?`<span class="env">${x.env}</span>`:''}</div></div>`})()}
+     <ul class="all">${R.r.map(y=>`<li><span class="dot" style="background:${y.col}"></span><b>${y.p.name}</b><span>${choice(y)}</span><span class="n">${sc('cost')?won(y.cost):''}</span></li>`).join('')}${sc('cost')||sc('chloride')?`<li><span></span><b>합계</b><span>${sc('chloride')?`염화 이온 ${R.cl.toFixed(1)}kg`:''}</span><span class="n" style="font-weight:700">${sc('cost')?won(R.cost):''}</span></li>`:''}</ul></section></div>`;
+  }else if(S)simHtml='<div class="empty" style="margin-top:20px">설계도에 장소가 없어서 시뮬레이터를 그릴 수 없어요. 어떤 장소를 넣을지 AI에게 말해 보세요.</div>';
+  const after=st.verified?`<div class="okbox">✓ 기준값 검증을 통과했어요. 이제 방안을 만들어 비교하고, 최종 채택안을 골라요.</div>
+   <div class="save"><button class="btn pri" data-slot="0">방안 1로 저장</button><button class="btn pri" data-slot="1">방안 2로 저장</button><button class="btn pri" data-slot="2">방안 3으로 저장</button><button class="btn" id="clearPlans">저장한 방안 지우기</button></div>${cmpTable()}`
+   :(S?'<div class="lockbox">🔒 기준값 검증을 통과하면 방안 저장·비교와 3차시(공유 보드)가 열려요.</div>':'');
+  el.innerHTML=sum+`<div class="vc">${chat}${specbox}</div>`+simHtml+after+`<details><summary>ⓘ 이 시뮬레이터가 알려주는 것과 알려주지 못하는 것</summary><ul>
+   <li><b>AI가 정하는 것:</b> 어떤 장소·제설제·사용량을 넣을지, 그늘·눈의 양·녹지를 반영할지, 어떤 결과를 보여줄지(설계도). AI가 숫자를 정하지는 않아요.</li>
+   <li><b>사이트가 정해 둔 값:</b> 예보(노면 −8℃, 눈 5cm), 그늘(조금 −1℃ · 많음 −2℃), 작용 한계(NaCl 약 −9℃, CaCl₂ 약 −25℃), 단가, 면적, 예산.</li>
+   <li><b>녹은 정도:</b> 온도별 효과 × (뿌린 양 ÷ 필요한 양). 재료비·염화 이온: 면적 × 사용량 × 단가, 제설제 질량 × 염화 이온 비율(NaCl 60.7%, CaCl₂ 63.9%).</li>
    <li><b>알려주지 못하는 것:</b> 실제 미끄러짐·사고 위험, 얼음이 녹는 속도, 식물·하천의 실제 피해.</li></ul></details>`;
-  startSnow();
+  if(S&&S.places.length)startSnow();
+  const log=el.querySelector('.chatlog');if(log)log.scrollTop=log.scrollHeight;
 }
 function cmpTable(){
   if(!st.plans.some(Boolean))return `<div class="empty">시뮬레이터에서 방안을 만든 뒤 저장 버튼을 누르면 최대 세 방안을 나란히 비교할 수 있어요.</div>`;
@@ -441,10 +573,7 @@ async function op(name,...a){try{await store6()[name](...a)}catch(e){console.err
 async function initBoard(){
   if(!B.inited){B.inited=true;
     if(FB_CONFIG){B.mode='connecting';renderBoard();
-      try{const V='11.6.1',base=`https://www.gstatic.com/firebasejs/${V}/`;
-        const [app,auth,fs]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
-        const a=app.initializeApp(FB_CONFIG),au=auth.getAuth(a),db=fs.getFirestore(a);
-        B.fb={auth,au,fs,db};
+      try{const f=await fbReady(),{auth,au}=f;
         auth.onAuthStateChanged(au,u=>{if(!u){auth.signInAnonymously(au);return}
           B.uid=u.uid;B.email=u.email||'';B.teacher=!!u.email&&TEACHER_EMAILS.includes(u.email);
           if(B.mode!=='live'){B.mode='live';LIVE.load()}else renderBoard()});
@@ -525,12 +654,13 @@ function render(){
   if(st.step===1)renderCrit();if(st.step===2)renderKeys();if(st.step===3)renderPlaces();if(st.step===4)renderSim();if(st.step===5)initBoard();
   store();
 }
-const go=n=>{st.step=clamp(n,1,5);render();try{window.scrollTo({top:0,behavior:'smooth'})}catch(e){}};
+const go=n=>{n=clamp(n,1,5);if(n===5&&!st.verified){toast('4단계 시뮬레이터 검증을 통과해야 3차시가 열려요.');n=4}st.step=n;render();try{window.scrollTo({top:0,behavior:'smooth'})}catch(e){}};
 
 document.addEventListener('submit',e=>{
   if(e.target.id==='entryForm'){e.preventDefault();st.room=$('eRoom').value.trim().replace(/\s+/g,'');
     const err=!st.room?'반 코드를 입력해 주세요.':!st.team?'모둠을 골라 주세요.':!mems().length?'조원 이름을 한 명 이상 적어 주세요.':'';
     $('eErr').textContent=err;if(err)return;st.entered=true;if(B.inited&&B.mode==='live')LIVE.load();else if(B.inited)LOCAL.load();go(st.step||1);return}
+  if(e.target.id==='vcForm'){e.preventDefault();const t=$('vcIn');sendVC(t.value);return}
   if(e.target.id==='newForm'){e.preventDefault();const author=$('nAuthor').value.trim(),content=$('nContent').value.trim(),fp=finalPlan();if(!author||!content||!fp)return;
     const base={정문:{x:40,y:50},언덕:{x:66,y:20},산책길:{x:4,y:28}}[B.zone];
     const c=B.zone==='종합'?stripSlot():(B.pending&&!inStrip(B.pending.y)?B.pending:{x:clamp(base.x+(Math.random()-.5)*14,0,82),y:clamp(base.y+(Math.random()-.5)*12,0,62)});
@@ -566,7 +696,7 @@ document.addEventListener('click',e=>{
   if(b.id==='prev')go(st.step-1);else if(b.id==='next')go(st.step+1);
   else if(b.dataset.del){const[c,i]=b.dataset.del.split(':');st.f[c].splice(+i,1);render()}
   else if(b.dataset.obs){const[p,k]=b.dataset.obs.split(':');st.obs[p][k]=b.dataset.v;render()}
-  else if(b.id==='build'){loading=true;render();setTimeout(()=>{const c={};PLACES.forEach(p=>{const o=st.obs[p.id];c[p.id]={slope:o.slope,traffic:o.traffic,shade:o.shade,green:o.green}});st.cfg=c;loading=false;render()},1300)}
+  else if(b.id==='verify'){runCheck()}
   else if(b.dataset.k){st.pick[st.sel][b.dataset.k]=b.dataset.v;render()}
   else if(b.dataset.slot){st.plans[+b.dataset.slot]=JSON.parse(JSON.stringify(st.pick));render()}
   else if(b.id==='clearPlans'){st.plans=[null,null,null];st.final=null;render()}
@@ -577,7 +707,7 @@ document.addEventListener('input',e=>{const t=e.target;
   if(t.dataset.mem!=null){st.members[+t.dataset.mem]=t.value.slice(0,12);store()}
   if(t.id==='eRoom'){st.room=t.value.trim();store()}
   else if(t.dataset.memo){st.obs[t.dataset.memo].memo=t.value;store()}});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeOv();return}const nk=e.target.closest&&e.target.closest('.note[data-note]');if(nk&&(e.key==='Enter'||e.key===' ')){e.preventDefault();B.active=nk.dataset.note;renderNote();return}const s=e.target.closest&&e.target.closest('.spot');if(s&&(e.key==='Enter'||e.key===' ')){e.preventDefault();st.sel=s.dataset.sel;render()}});
+document.addEventListener('keydown',e=>{if(e.target.id==='vcIn'&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();sendVC(e.target.value);return}if(e.key==='Escape'){closeOv();return}const nk=e.target.closest&&e.target.closest('.note[data-note]');if(nk&&(e.key==='Enter'||e.key===' ')){e.preventDefault();B.active=nk.dataset.note;renderNote();return}const s=e.target.closest&&e.target.closest('.spot');if(s&&(e.key==='Enter'||e.key===' ')){e.preventDefault();st.sel=s.dataset.sel;render()}});
 render();
 }
 </script>

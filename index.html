@@ -394,6 +394,8 @@ function ruleParse(t,prev){const s=JSON.parse(JSON.stringify(prev||EMPTY_SPEC)),
   if(has(/녹(는|은|았|을)|녹는\s*정도|얼마나\s*녹/))set(s.show,'melt',!off);if(has(/비용|가격|돈|재료비/))set(s.show,'cost',!off);if(has(/예산/))set(s.show,'budget',!off);if(has(/염화\s*이온|염화물|환경\s*(부담|영향)/))set(s.show,'chloride',!off);
   return s}
 /* ---- AI 연결 (Firebase AI Logic · Gemini) ---- */
+/* AI 전용 Firebase 프로젝트(개인 계정, Gemini 무료 등급). 공유 보드는 위 FB_CONFIG 프로젝트를 그대로 씀 */
+const AI_CONFIG={apiKey:"AIzaSyDdQ0s1BUe8Ptn7pIvA2RanZO_T4KBm_lI",authDomain:"snowy-8e89f.firebaseapp.com",projectId:"snowy-8e89f",storageBucket:"snowy-8e89f.firebasestorage.app",messagingSenderId:"739571266086",appId:"1:739571266086:web:cf2c0bd6035a224396ace7"};
 const AI_MODELS=['gemini-3.5-flash','gemini-3.5-flash-lite'];  // 무료 등급에서 쓸 수 있는 모델 (앞의 것이 막히면 다음 것으로)
 const AI_SYS=`너는 고등학생이 '학교 주변 제설 시뮬레이터'를 말로 설계하도록 돕는 코딩 도우미야. 학생의 요청을 읽고 시뮬레이터 설계도를 JSON으로만 돌려줘.
 설계도 형식: {"places":[...],"materials":[...],"amounts":[...],"useShade":true/false,"useSnow":true/false,"useGreen":true/false,"show":[...],"reply":"..."}
@@ -418,8 +420,8 @@ async function fbReady(){
     const a=app.initializeApp(FB_CONFIG),au=auth.getAuth(a),db=fs.getFirestore(a);B.fb={app:a,auth,au,fs,db,base};return B.fb})();
   return fbReady.p}
 async function askAI(text){
-  const f=await fbReady();
-  if(!AIM){const ai=await import(f.base+'firebase-ai.js');const inst=ai.getAI(f.app,{backend:new ai.GoogleAIBackend()});AIM={ai,inst,i:0}}
+  if(!AIM){const base='https://www.gstatic.com/firebasejs/12.19.0/';const [app,ai]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-ai.js')]);
+    const a=app.getApps().find(x=>x.name==='ai')||app.initializeApp(AI_CONFIG,'ai');AIM={ai,inst:ai.getAI(a,{backend:new ai.GoogleAIBackend()}),i:0}}
   const hist=st.chat.slice(-6).map(m=>`${m.who==='me'?'학생':'도우미'}: ${m.text}`).join('\n');
   const prompt=JSON.stringify({현재설계도:st.spec||EMPTY_SPEC,최근대화:hist,이번요청:text});
   let lastErr;
